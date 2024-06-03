@@ -9,5 +9,5 @@ RUN npm config set strict-ssl false \
     && npm install \
     && npm run build
 
-EXPOSE 80
+EXPOSE 10000
 CMD [ "npm", "start" ]

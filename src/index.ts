@@ -14,7 +14,7 @@ import { ethers } from 'ethers';
 // program.parse(process.argv);
 // const options = program.opts();
 let privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-const port = 8080
+const port = 10000
 // if (privateKey.startsWith('@')) {
 //   privateKey = ethers.utils.arrayify(
 //     readFileSync(privateKey.slice(1), { encoding: 'utf-8' })
