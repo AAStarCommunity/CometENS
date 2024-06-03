@@ -4,7 +4,8 @@
   "description": "This package implements a simple CCIP-read gateway server for ENS offchain resolution.",
   "main": "index.js",
   "scripts": {
-    "dev": "npx tsx src/index.ts",
+    "start": "npx tsx src/index.ts",
+    "build": "npx tsx src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "tslib": "^2.4.0",
+    "tsx": "^4.11.2",
     "typescript": "^4.7.4"
   },
   "keywords": [],
