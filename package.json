@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npx tsx src/index.ts",
     "tsc": "tsc",
-    "build": "npx tsc && npx prisma generate && node dist/index.js",
+    "build": "npx tsc && npx prisma generate && pm2 start dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "@prisma/extension-accelerate": "^1.1.0",
     "bn.js": "^5.2.1",
     "ethers": "5.7.2",
+    "pm2": "^5.4.0",
     "prisma": "^5.14.0"
   },
   "devDependencies": {
