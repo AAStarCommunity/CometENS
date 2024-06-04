@@ -1,4 +1,4 @@
-import prisma from "@/lib/db";
+import prisma from "../db";
 
 export const getAddress = async (node: string) => {
     return await prisma.ens.findUnique({

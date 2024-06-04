@@ -1,4 +1,4 @@
-import { getAddress, getText, getContenthash } from '@/lib/utils/query';
+import { getAddress, getText, getContenthash } from '../lib/utils/query';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const EMPTY_CONTENT_HASH = '0x';
@@ -7,6 +7,7 @@ const ttl = 300;
 export async function addr(name: string, coinType: number) {
   try {
     let addresses = await getAddress(name);
+    // @ts-ignore
     addresses = addresses?.address;
     let addr = ZERO_ADDRESS;
     // @ts-ignore

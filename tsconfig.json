@@ -7,7 +7,8 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "moduleResolution": "node16",
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -27,7 +28,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "database/ens-data-model.ts"
+    "database/ens-data-model.ts",
+    "lib"
   ],
   "exclude": ["node_modules"]
 }
