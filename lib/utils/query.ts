@@ -2,6 +2,7 @@ import prisma from "../db";
 
 export const getAddress = async (node: string) => {
     return await prisma.ens.findUnique({
+        // @ts-ignore
         where: {
             node: node,
         },
@@ -13,6 +14,7 @@ export const getAddress = async (node: string) => {
 
 export const getText = async (node: string) => {
     return await prisma.ens.findUnique({
+        // @ts-ignore
         where: {
             node: node,
         },
@@ -24,6 +26,7 @@ export const getText = async (node: string) => {
 
 export const getContenthash = async (node: string) => {
     return await prisma.ens.findUnique({
+        // @ts-ignore
         where: {
             node: node,
         },

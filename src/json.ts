@@ -25,6 +25,7 @@ export async function addr(name: string, coinType: number) {
 export async function text(name: string, key: string) {
   try {
     const texts = await getText(name);
+    // @ts-ignore
     const text = texts?.text;
 
     // @ts-ignore
@@ -41,6 +42,7 @@ export async function text(name: string, key: string) {
 export async function contenthash(name: string) {
   try {
     const contenthashRes = await getContenthash(name);
+    // @ts-ignore
     const contenthash = contenthashRes?.contenthash;
 
     if (contenthash) {
