@@ -9,5 +9,5 @@ COPY . .
 RUN npx tsdx build \
     && npx prisma generate
 
-EXPOSE 80
+EXPOSE 10000
 CMD ["node", "dist/index.js"]
