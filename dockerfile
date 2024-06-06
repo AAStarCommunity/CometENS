@@ -1,13 +1,15 @@
-FROM node:16
+FROM node:20.14.0-alpine3.20 as base
+RUN npm i -g pnpm
 
-RUN apt-get update \
-    && apt-get install -qq build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+FROM base as build
+WORKDIR /root/app
+COPY package.json .
 
-WORKDIR /app/
+RUN ["pnpm", "install"]
+
 COPY . .
-RUN npm config set strict-ssl false \
-    && npm install \
-    && npm run build
+RUN npx tsdx build \
+    && npx prisma generate
 
-EXPOSE 10000
-CMD [ "npm", "start" ]
+EXPOSE 80
+CMD ["node", "dist/index.js"]
