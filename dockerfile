@@ -1,11 +1,9 @@
-FROM node:20.14.0-alpine3.20 as base
-RUN npm i -g pnpm
+FROM node:20.14.0-alpine3.20
 
-FROM base as build
 WORKDIR /root/app
 COPY package.json .
 
-RUN ["pnpm", "install"]
+RUN ["npm", "install"]
 
 COPY . .
 RUN npx tsdx build \
