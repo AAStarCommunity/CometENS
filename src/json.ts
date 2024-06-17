@@ -1,4 +1,4 @@
-import { getAddress, getText, getContenthash } from '../lib/utils/query';
+import { getAddress, getText, getContenthash } from './query';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const EMPTY_CONTENT_HASH = '0x';
@@ -54,3 +54,9 @@ export async function contenthash(name: string) {
     return { contenthash: EMPTY_CONTENT_HASH, ttl };
   }
 }
+
+// ~(async function () {
+// const address = await getAddress('ethpaymaster.eth');
+// const address1 = await addr('ethpaymaster.eth', 60);
+// console.log(address, address1, 'address 11');
+// }())
