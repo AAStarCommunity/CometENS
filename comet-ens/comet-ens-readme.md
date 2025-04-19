@@ -1,194 +1,80 @@
-我将提供一个使用ethers.js和wagmi的ENS域名操作示例，展示如何处理aastar.eth域名、注册和解析子域名jason.aastar.io，以及在Layer2（如Optimism）上解析子域名的功能。代码包含详细的中文注释，并参考了ENS官方SDK文档。
+# CometENS V2
+Now we upgrade CometENS to support CCIP-read based on offchain resolver on Optimism Layer2.
 
-pnpm create vite
+## System overview
+1. Resolve ENS domain to address
+2. Register subdomain
+3. Set subdomain resolution address
+4. Resolve subdomain on Layer2 (e.g., Optimism)
+5. Set text record
+6. Set Content Hash (for decentralized websites, e.g., IPFS)
+7. Set ENS avatar
+8. Set contract name (associate with smart contract)
+9. Set multichain address (e.g., set address for Bitcoin or Polygon)
+
+
+
+## What do CometENS bring to users?
+
+### 好记好用的加密账户
+例如jason.aastar.eth
+→ 需油册即新增Account
+→ 要积分在你栏里
+→ 完成任务获得
+→ 打入Email 账号（未绑定）
+→ 创建ENS 和帐户（地址）
+ 
+### Features
+1. 对用户：多链统一地址：   jason.aastar.eth
+2. 对开发者：统一的SDK去中心接口：plancker.aastar.eth,获得text record(API list)
+具体特性：
+ 
+1. 二级域 1155 Token归属于你，可管理，提供签名。（以社区为单位）
+2. 多链地址一码，主网 jason.aa → 可计算，不部署。
+3. 持有域名，就是持有币
+- OP.jason.aa.eth
+- Arb.jason.aa.eth → 可先转账再部署
+4. binding：和地址绑定，合约地址可换私钥，地址不变。
+- 有个油本，发行或买断，要充值到 被换用的Account。
+5. 更换过程中的资金不会丢失，缺要转账？
+6. 私钥丢失，受控
+- 只能转出到几个地址
+- 只能由指定的
+- 只能旧版恢复
+ 
+钱包地址
+导入为很
+自主签名ENS
+多链地址
+交互站里储存（要充值）
+去中心网站（2PF5, 未来转）
+默认合约账户，为安全兼容/收费。
+绑定web3/EOA 于网站登录，API
+默认登录集成指纹支付。支付积分（官方服务器）
+ 
+
+
+## Our solution
+In medium term, we will follow ENS official suggestion: deploy a gateway server that implements a simple CCIP-read gateway server for ENS offchain resolution.
+In long term, we will follow the [ENSV2 roadmap](https://roadmap.ens.domains/l2-roadmap/).
+We use ethers.js V6 and wagmiV2 的ENS domain operate, reference from [ENS official SDK documentation](https://docs.ens.domains/web/quickstart).
+
+## How to use
+
+### Initiate
+```
+pnpm create vite comet-ens
 # 选择 react 或 react-ts 模板
 
 pnpm add ethers wagmi
 pnpm add react@19 react-dom@19 typescript@latest -D
-
-```javascript
-import { ethers } from 'ethers';
-import { useSigner, useProvider, useEnsResolver, useEnsName } from 'wagmi';
-import { useEffect, useState } from 'react';
-
-// ENS注册表合约地址（主网）
-const ENS_REGISTRY_ADDRESS = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
-
-// 假设使用的Layer2是Optimism，Optimism的ENS解析器地址（需要根据实际Layer2网络替换）
-const OPTIMISM_ENS_RESOLVER_ADDRESS = '0xYOUR_OPTIMISM_RESOLVER_ADDRESS';
-
-// 示例React组件，展示ENS域名操作
-function ENSDemo() {
-  // 使用wagmi获取签名者（signer）和提供者（provider）
-  const { data: signer } = useSigner();
-  const { data: provider } = useProvider();
-  const [ensName, setEnsName] = useState('aastar.eth'); // 主域名
-  const [subdomain, setSubdomain] = useState('jason.aastar.eth'); // 子域名
-  const [address, setAddress] = useState('');
-  const [resolverAddress, setResolverAddress] = useState('');
-
-  // 使用wagmi的useEnsResolver获取ENS解析器
-  const { data: resolver } = useEnsResolver({ name: ensName });
-
-  // 使用wagmi的useEnsName查询ENS名称
-  const { data: resolvedName } = useEnsName({ address });
-
-  useEffect(() => {
-    if (resolver) {
-      setResolverAddress(resolver.address);
-    }
-  }, [resolver]);
-
-  // 1. 解析ENS域名到地址
-  async function resolveENSName() {
-    try {
-      // 使用ethers.js的provider解析ENS域名
-      const resolvedAddress = await provider.resolveName(ensName);
-      if (resolvedAddress) {
-        setAddress(resolvedAddress);
-        console.log(`域名 ${ensName} 解析到地址: ${resolvedAddress}`);
-      } else {
-        console.error('无法解析域名');
-      }
-    } catch (error) {
-      console.error('解析ENS域名失败:', error);
-    }
-  }
-
-  // 2. 注册子域名（需要拥有主域名权限）
-  async function registerSubdomain() {
-    try {
-      // 初始化ENS注册表合约
-      const ensContract = new ethers.Contract(
-        ENS_REGISTRY_ADDRESS,
-        ['function setSubnodeOwner(bytes32 node, bytes32 label, address owner)'],
-        signer
-      );
-
-      // 计算主域名和子域名的Namehash
-      const node = ethers.utils.namehash(ensName); // aastar.eth的Namehash
-      const label = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('jason')); // 子域名标签
-
-      // 设置子域名拥有者（这里假设将子域名分配给当前签名者的地址）
-      const tx = await ensContract.setSubnodeOwner(node, label, await signer.getAddress());
-      await tx.wait();
-      console.log(`子域名 ${subdomain} 注册成功，交易哈希: ${tx.hash}`);
-    } catch (error) {
-      console.error('注册子域名失败:', error);
-    }
-  }
-
-  // 3. 设置子域名解析地址
-  async function setSubdomainResolution() {
-    try {
-      // 获取子域名的解析器
-      const resolverContract = new ethers.Contract(
-        resolverAddress,
-        ['function setAddr(bytes32 node, address addr)'],
-        signer
-      );
-
-      // 计算子域名的Namehash
-      const subdomainNode = ethers.utils.namehash(subdomain);
-
-      // 设置子域名解析到的地址（这里使用签名者的地址作为示例）
-      const tx = await resolverContract.setAddr(subdomainNode, await signer.getAddress());
-      await tx.wait();
-      console.log(`子域名 ${subdomain} 解析地址设置成功，交易哈希: ${tx.hash}`);
-    } catch (error) {
-      console.error('设置子域名解析失败:', error);
-    }
-  }
-
-  // 4. 在Layer2（如Optimism）上解析子域名
-  async function resolveSubdomainOnLayer2() {
-    try {
-      // 连接到Optimism网络的provider（需要配置Optimism RPC）
-      const optimismProvider = new ethers.providers.JsonRpcProvider('https://mainnet.optimism.io');
-
-      // 使用Optimism的ENS解析器地址初始化合约
-      const resolverContract = new ethers.Contract(
-        OPTIMISM_ENS_RESOLVER_ADDRESS,
-        ['function addr(bytes32 node) view returns (address)'],
-        optimismProvider
-      );
-
-      // 计算子域名的Namehash
-      const subdomainNode = ethers.utils.namehash(subdomain);
-
-      // 查询子域名在Layer2上的解析地址
-      const resolvedAddress = await resolverContract.addr(subdomainNode);
-      console.log(`子域名 ${subdomain} 在Optimism上解析到地址: ${resolvedAddress}`);
-    } catch (error) {
-      console.error('在Layer2上解析子域名失败:', error);
-    }
-  }
-
-  // 5. 设置ENS记录（例如文本记录）
-  async function setTextRecord() {
-    try {
-      // 初始化解析器合约
-      const resolverContract = new ethers.Contract(
-        resolverAddress,
-        ['function setText(bytes32 node, string key, string value)'],
-        signer
-      );
-
-      // 设置文本记录（例如URL）
-      const node = ethers.utils.namehash(ensName);
-      const tx = await resolverContract.setText(node, 'url', 'https://jason.aastar.io');
-      await tx.wait();
-      console.log(`文本记录设置成功，交易哈希: ${tx.hash}`);
-    } catch (error) {
-      console.error('设置文本记录失败:', error);
-    }
-  }
-
-  return (
-    <div>
-      <h1>ENS 域名操作示例</h1>
-      <div>
-        <label>主域名: </label>
-        <input
-          value={ensName}
-          onChange={(e) => setEnsName(e.target.value)}
-          placeholder="aastar.eth"
-        />
-      </div>
-      <div>
-        <label>子域名: </label>
-        <input
-          value={subdomain}
-          onChange={(e) => setSubdomain(e.target.value)}
-          placeholder="jason.aastar.eth"
-        />
-      </div>
-      <div>
-        <button onClick={resolveENSName}>解析ENS域名</button>
-        <p>解析地址: {address}</p>
-      </div>
-      <div>
-        <button onClick={registerSubdomain}>注册子域名</button>
-      </div>
-      <div>
-        <button onClick={setSubdomainResolution}>设置子域名解析</button>
-      </div>
-      <div>
-        <button onClick={resolveSubdomainOnLayer2}>在Layer2解析子域名</button>
-      </div>
-      <div>
-        <button onClick={setTextRecord}>设置文本记录</button>
-      </div>
-      <div>
-        <p>当前解析器地址: {resolverAddress}</p>
-        <p>查询的ENS名称: {resolvedName}</p>
-      </div>
-    </div>
-  );
-}
-
-export default ENSDemo;
 ```
+### Free second level domain registry
+Free for all users: register your favorite domain name and use it.
+
+
+
+
 
 ### 代码说明
 1. **依赖和初始化**：
