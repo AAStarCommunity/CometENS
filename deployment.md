@@ -5,28 +5,51 @@
 ## 系统架构
 
 ```mermaid
-flowchart TD
-    UserClient --> L1ENSRegistry
-    L1ENSRegistry --> UserClient
-    UserClient --> L1ResolverContract
-    L1ResolverContract --> UserClient
-    UserClient --> Gateway
-    Gateway --> OptimismL2
-    OptimismL2 --> Gateway
-    Gateway --> UserClient
-    UserClient --> L1ResolverContract
-    L1ResolverContract --> VerifierContract
-    VerifierContract --> L1ResolverContract
-    L1ResolverContract --> UserClient
+graph TD
+    %% Core Components
+    ENSResolverFactory[ENSResolverFactory]
+    ENSResolver[ENSResolver]
+    GatewayVerifier[GatewayVerifier]
+    ENS[ENS Registry]
+    ENSManager[ENSManager]
+    StorageContract[StorageContract]
+    OPResolver[OPResolver]
+    IGatewayVerifier[IGatewayVerifier]
+    Ownable[Ownable]
+    IAddrResolver[IAddrResolver]
+    ITextResolver[ITextResolver]
+    IContentHashResolver[IContentHashResolver]
 
-    subgraph OptimismL2
-        L2ENSRegistry
-        StorageContract
-        ENSManager
-        ENSManager --> L2ENSRegistry
-        L2ENSRegistry --> StorageContract
-    end
-  ```
+    %% Relationships with numbered labels
+    ENSResolverFactory -- 1. creates --> ENSResolver
+    ENSResolverFactory -- 2. uses --> GatewayVerifier
+    ENSResolverFactory -- 3. references --> ENS
+    ENSResolverFactory -- 4. inherits --> Ownable
+
+    ENSResolver -- 5. inherits --> Ownable
+    ENSResolver -- 6. implements --> IAddrResolver
+    ENSResolver -- 7. implements --> ITextResolver
+    ENSResolver -- 8. implements --> IContentHashResolver
+    ENSResolver -- 9. references --> ENS
+    ENSResolver -- 10. uses --> GatewayVerifier
+
+    GatewayVerifier -- 11. inherits --> Ownable
+
+    ENSManager -- 12. uses --> StorageContract
+    ENSManager -- 13. manages --> ENS
+    ENSManager -- 14. inherits --> Ownable
+
+    OPResolver -- 15. uses --> IGatewayVerifier
+
+    %% Styles
+    classDef contract fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef interface fill:#bbf,stroke:#333,stroke-width:1px;
+    classDef external fill:#afa,stroke:#333,stroke-width:1px;
+
+    class ENSResolverFactory,ENSResolver,GatewayVerifier,ENSManager,StorageContract,OPResolver contract;
+    class IAddrResolver,ITextResolver,IContentHashResolver,IGatewayVerifier interface;
+    class Ownable,ENS external;
+```
 
 ## 需要部署的合约
 
