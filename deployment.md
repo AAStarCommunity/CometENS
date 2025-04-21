@@ -5,33 +5,26 @@
 ## 系统架构
 
 ```mermaid
-graph TD
-    UserClient[User Client]
-    L1ENSRegistry[L1 ENS Registry]
-    L1Resolver[L1 Resolver]
-    Gateway[Unruggable Gateway]
-    OptimismL2[Optimism L2]
-    Verifier[L1 Verifier]
-    
-    UserClient -- Query ENS --> L1ENSRegistry
-    L1ENSRegistry -- Resolver address --> UserClient
-    UserClient -- resolve/addr --> L1Resolver
-    L1Resolver -- OffchainLookup --> UserClient
-    UserClient -- HTTP request --> Gateway
-    Gateway -- Fetch data --> OptimismL2
-    OptimismL2 -- Data & proof --> Gateway
-    Gateway -- Data & proof --> UserClient
-    UserClient -- Callback --> L1Resolver
-    L1Resolver -- Call verifier --> Verifier
-    Verifier -- Verify proof --> L1Resolver
-    L1Resolver -- Result --> UserClient
+flowchart TD
+    UserClient -- 1Query ENS name --> L1ENSRegistry
+    L1ENSRegistry -- 2Return Resolver address --> UserClient
+    UserClient -- 3Call resolve/addr --> L1Resolver
+    L1Resolver -- 4OffchainLookup error --> UserClient
+    UserClient -- 5HTTP request --> Gateway
+    Gateway -- 6Fetch data/proof --> OptimismL2
+    OptimismL2 -- 7Return data/proof --> Gateway
+    Gateway -- 8Return data/proof --> UserClient
+    UserClient -- 9Callback --> L1Resolver
+    L1Resolver -- 10Call verifier --> Verifier
+    Verifier -- 11Verify proof --> L1Resolver
+    L1Resolver -- 12Return result --> UserClient
 
     subgraph OptimismL2 [Optimism L2]
         L2ENSRegistry[L2 ENS Registry]
         StorageContract[Storage Contract]
         ENSManager[ENS Manager]
         ENSManager -- Manage domain --> L2ENSRegistry
-        L2ENSRegistry -- Read data --> StorageContract
+        L2ENSRegistry -- Read domain data --> StorageContract
     end
 ```
 
