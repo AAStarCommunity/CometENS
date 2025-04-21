@@ -84,6 +84,7 @@ git clone https://github.com/unruggable-labs/unruggable-gateways-ens-resolution-
 cd unruggable-gateways-ens-resolution-demos
 
 # 安装依赖
+curl -fsSL https://bun.sh/install | bash
 bun install
 forge install
 
