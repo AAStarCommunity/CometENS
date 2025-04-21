@@ -221,12 +221,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
             
             // 如果是ETH地址，同时触发AddrChanged事件
             if (coinTypes[i] == 60 && addresses[i].length == 20) {
-                address ethAddr;
-                assembly {
-                    let addrPos := add(add(addresses, 32), mul(i, 32))
-                    let addrVal := mload(addrPos)
-                    ethAddr := addrVal
-                }
+                address ethAddr = abi.decode(addresses[i], (address));
                 emit AddrChanged(node, ethAddr);
             }
         }
