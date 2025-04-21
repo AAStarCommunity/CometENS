@@ -5,7 +5,7 @@
 ## 系统架构
 
 ```mermaid
-graph TDflowchart TD
+flowchart TD
     UserClient -- 1. Query ENS name --> L1ENSRegistry
     L1ENSRegistry -- 2. Return Resolver address --> UserClient
     UserClient -- 3. Call resolve/addr --> L1Resolver
