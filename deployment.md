@@ -35,6 +35,33 @@ graph TD
     end
 ```
 
+sequence version
+
+```mermaid
+graph TD
+    UserClient -- 1. Query ENS name --> L1ENSRegistry
+    L1ENSRegistry -- 2. Return resolver --> UserClient
+    UserClient -- 3. Call resolve/addr --> L1Resolver
+    L1Resolver -- 4. OffchainLookup error --> UserClient
+    UserClient -- 5. HTTP request --> Gateway
+    Gateway -- 6. Fetch data/proof --> OptimismL2
+    OptimismL2 -- 7. Return data/proof --> Gateway
+    Gateway -- 8. Return data/proof --> UserClient
+    UserClient -- 9. Callback --> L1Resolver
+    L1Resolver -- 10. Call verifier --> Verifier
+    Verifier -- 11. Verify proof --> L1Resolver
+    L1Resolver -- 12. Return result --> UserClient
+
+    subgraph OptimismL2 [Optimism L2]
+        L2ENSRegistry[L2 ENS Registry]
+        StorageContract[Storage Contract]
+        ENSManager[ENS Manager]
+        ENSManager -- Manage domain --> L2ENSRegistry
+        L2ENSRegistry -- Read data --> StorageContract
+    end
+
+```
+
 ## 需要部署的合约
 
 ### L2 (Optimism) 合约
