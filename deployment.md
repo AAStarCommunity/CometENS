@@ -28,32 +28,6 @@ flowchart TD
     end
 ```
 
-sequence version
-
-```mermaid
-graph TD
-    UserClient -- 1 --> L1ENSRegistry
-    L1ENSRegistry -- 2 --> UserClient
-    UserClient -- 3 --> L1Resolver
-    L1Resolver -- 4 --> UserClient
-    UserClient -- 5 --> Gateway
-    Gateway -- 6 --> OptimismL2
-    OptimismL2 -- 7 --> Gateway
-    Gateway -- 8 --> UserClient
-    UserClient -- 9 --> L1Resolver
-    L1Resolver -- 10 --> Verifier
-    Verifier -- 11 --> L1Resolver
-    L1Resolver -- 12 --> UserClient
-
-    subgraph OptimismL2 [Optimism L2]
-        L2ENSRegistry[L2 ENS Registry]
-        StorageContract[Storage Contract]
-        ENSManager[ENS Manager]
-        ENSManager -- 13 --> L2ENSRegistry
-        L2ENSRegistry -- 14 --> StorageContract
-    end
-
-```
 
 ## 需要部署的合约
 
