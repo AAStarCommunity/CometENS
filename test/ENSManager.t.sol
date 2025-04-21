@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import "forge-std/Test.sol";
 import "../contracts/ENSManager.sol";
 import "../contracts/StorageContract.sol";
-import "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
+import "@ensdomains/contracts/registry/ENSRegistry.sol";
 
 contract ENSManagerTest is Test {
     ENSRegistry public registry;
@@ -207,7 +207,7 @@ contract ENSManagerTest is Test {
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
         
         uint256 chainId = 137; // Polygon
-        bytes memory addr = hex"0x1234567890123456789012345678901234567890";
+        bytes memory addr = hex"1234567890123456789012345678901234567890";
         
         // 预期事件
         vm.expectEmit(true, false, false, true);

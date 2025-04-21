@@ -173,3 +173,44 @@ dist
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# ENS Layer2 Resolution Project
+
+# Node.js
+node_modules/
+.env
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Bun
+bun.lockb
+
+# Foundry
+out/
+cache/
+forge-cache/
+.openzeppelin/
+
+# VSCode
+.vscode/
+
+# Mac
+.DS_Store
+
+# Deployments (except .env files)
+deployments/*
+!deployments/.gitkeep
+
+# Frontend
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/dist
+frontend/.env*
+frontend/.turbo
+frontend/coverage
+frontend/storybook-static
+frontend/.vercel

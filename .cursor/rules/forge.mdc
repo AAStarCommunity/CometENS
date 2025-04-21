@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+1. 对所有合约代码修改完毕后，请确认是否完成了对应的部署脚本和test文件更新
+2. 所有test文件和部署脚本，都使用dotenv读取根目录env变量
+3. 都修改完毕后，先运行forge build，如果有错误就修改到不报错位置
+4. 然后运行forge test -vv，如果有错误就修改到不报错位置
+5. 然后更新changes.md，总结本次变动和新增。

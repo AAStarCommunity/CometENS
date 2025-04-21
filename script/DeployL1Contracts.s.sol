@@ -5,8 +5,17 @@ import "forge-std/Script.sol";
 import "@unruggable/contracts/op/OPFaultVerifier.sol";
 import "@unruggable/contracts/GatewayVM.sol";
 import "@unruggable/contracts/eth/EthVerifierHooks.sol";
-import "@unruggable/test/gateway/FixedOPFaultGameFinder.sol";
+// import "@unruggable/test/gateway/FixedOPFaultGameFinder.sol";
 import "../contracts/OPResolver.sol";
+
+// 手动定义FixedOPFaultGameFinder合约
+contract FixedOPFaultGameFinder {
+    uint256 public immutable commitIndex;
+    
+    constructor(uint256 _commitIndex) {
+        commitIndex = _commitIndex;
+    }
+}
 
 /**
  * @title DeployL1Contracts
@@ -37,9 +46,9 @@ contract DeployL1Contracts is Script {
         
         vm.startBroadcast(deployerPrivateKey);
 
-        // 1. 部署 GatewayVM 库
-        GatewayVM gatewayVM = new GatewayVM();
-        console.log("GatewayVM deployed at:", address(gatewayVM));
+        // 1. GatewayVM是库，不能直接实例化
+        // GatewayVM gatewayVM = new GatewayVM();
+        // console.log("GatewayVM deployed at:", address(gatewayVM));
 
         // 2. 部署 EthVerifierHooks
         EthVerifierHooks hooks = new EthVerifierHooks();
@@ -84,7 +93,7 @@ contract DeployL1Contracts is Script {
         
         // 7. 将部署地址写入文件以便后续使用
         string memory deploymentInfo = string(abi.encodePacked(
-            "GATEWAY_VM_ADDRESS=", vm.toString(address(gatewayVM)), "\n",
+            // "GATEWAY_VM_ADDRESS=", vm.toString(address(gatewayVM)), "\n",
             "ETH_VERIFIER_HOOKS_ADDRESS=", vm.toString(address(hooks)), "\n",
             "GAME_FINDER_ADDRESS=", vm.toString(address(gameFinder)), "\n",
             "OP_FAULT_VERIFIER_ADDRESS=", vm.toString(address(verifier)), "\n",

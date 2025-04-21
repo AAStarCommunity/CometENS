@@ -6,27 +6,27 @@
 
 ```mermaid
 flowchart TD
-    User[用户/客户端] -->|1. 查询 ENS 名称| L1ENSRegistry[L1 ENS Registry]
-    L1ENSRegistry -->|2. 返回 Resolver 地址| User
-    User -->|3. 调用 resolve/addr| L1Resolver[L1 Resolver 合约]
-    L1Resolver -->|4. 抛出 OffchainLookup 错误| User
-    User -->|5. HTTP 请求| Gateway[Unruggable Gateway]
-    Gateway -->|6. 获取数据和证明| L2[Optimism L2]
-    L2 -->|7. 返回数据和证明| Gateway
-    Gateway -->|8. 返回数据和证明| User
-    User -->|9. 调用回调函数| L1Resolver
-    L1Resolver -->|10. 调用验证器| Verifier[L1 Verifier 合约]
-    Verifier -->|11. 验证证明| L1Resolver
-    L1Resolver -->|12. 返回解析结果| User
-    
-    subgraph L2[Optimism L2]
+    User[User/Client] -->|1. Query ENS name| L1ENSRegistry[L1 ENS Registry]
+    L1ENSRegistry -->|2. Return Resolver address| User
+    User -->|3. Call resolve/addr| L1Resolver[L1 Resolver Contract]
+    L1Resolver -->|4. Throw OffchainLookup error| User
+    User -->|5. HTTP Request| Gateway[Unruggable Gateway]
+    Gateway -->|6. Fetch data and proof| L2[Optimism L2]
+    L2 -->|7. Return data and proof| Gateway
+    Gateway -->|8. Return data and proof| User
+    User -->|9. Call callback function| L1Resolver
+    L1Resolver -->|10. Call Verifier| Verifier[L1 Verifier Contract]
+    Verifier -->|11. Verify proof| L1Resolver
+    L1Resolver -->|12. Return resolution result| User
+
+    subgraph Optimism_L2 [Optimism L2]
         L2ENSRegistry[L2 ENS Registry]
-        StorageContract[存储合约]
-        ENSManager[ENS 管理合约]
+        StorageContract[Storage Contract]
+        ENSManager[ENS Manager Contract]
     end
-    
-    ENSManager -->|管理域名| L2ENSRegistry
-    L2ENSRegistry -->|读取域名数据| StorageContract
+
+    ENSManager -->|Manage domain| L2ENSRegistry
+    L2ENSRegistry -->|Read domain data| StorageContract
 ```
 
 ## 需要部署的合约

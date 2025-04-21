@@ -1,0 +1,38 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ENS Layer2 Resolution Project Structure
+
+This project implements ENS domain resolution on Layer 2 (Optimism) using Unruggable Gateways.
+
+## Core Contracts
+
+- [contracts/StorageContract.sol](mdc:contracts/StorageContract.sol): 存储域名解析数据的合约
+- [contracts/ENSManager.sol](mdc:contracts/ENSManager.sol): 管理域名注册和解析的合约
+
+## Deployment Scripts
+
+- [script/DeployL2Contracts.s.sol](mdc:script/DeployL2Contracts.s.sol): L2 合约部署脚本
+- [script/DeployL1Contracts.s.sol](mdc:script/DeployL1Contracts.s.sol): L1 合约部署脚本
+- [script/SetupResolver.s.sol](mdc:script/SetupResolver.s.sol): 设置 ENS Resolver 的脚本
+
+## Tests
+
+- [test/StorageContract.t.sol](mdc:test/StorageContract.t.sol): StorageContract 单元测试
+- [test/ENSManager.t.sol](mdc:test/ENSManager.t.sol): ENSManager 单元测试
+- [test-resolution.ts](mdc:test-resolution.ts): 端到端测试脚本
+
+## Frontend
+
+前端代码位于 `frontend/` 目录，基于 ENS App v3 构建，但进行了精简和定制。
+
+- [frontend/src/hooks/useL2Resolver.ts](mdc:frontend/src/hooks/useL2Resolver.ts): L2 解析钩子
+- [frontend/src/components/RegisterSubdomain.tsx](mdc:frontend/src/components/RegisterSubdomain.tsx): 注册子域名组件
+
+## Deployment Process
+
+1. 部署 L2 合约: `forge script script/DeployL2Contracts.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast`
+2. 部署 L1 合约: `forge script script/DeployL1Contracts.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast`
+3. 设置解析器: `forge script script/SetupResolver.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast`

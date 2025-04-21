@@ -109,7 +109,7 @@ contract StorageContractTest is Test {
     // 测试设置多链地址
     function testSetMultiChainAddress() public {
         uint256 chainId = 137; // Polygon
-        bytes memory addr = hex"0x1234567890123456789012345678901234567890";
+        bytes memory addr = hex"1234567890123456789012345678901234567890";
         
         vm.expectEmit(true, false, false, true);
         emit StorageContract.MultiChainAddressSet(SUB_NODE, chainId, addr);
