@@ -7,22 +7,22 @@ import "../contracts/StorageContract.sol";
 contract StorageContractTest is Test {
     StorageContract public storageContract;
     
-    // 测试用地址
+    // Test addresses
     address public constant OWNER = address(0x1);
     address public constant REGISTRY = address(0x2);
     address public constant ACCOUNT = address(0x3);
     
-    // 测试域名哈希
+    // Test domain hashes
     bytes32 public constant PARENT_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae; // aastar.eth
     bytes32 public constant SUB_NODE = 0x3c2e632b9818fb2809a494170e5eb02960f9ef5ef40ac0d1d31359c57bd8323e; // sub.aastar.eth
     
-    // 设置测试环境
+    // Set up the test environment
     function setUp() public {
         storageContract = new StorageContract();
         vm.startPrank(OWNER);
     }
     
-    // 测试注册子域名
+    // Test subdomain registration
     function testRegisterSubdomain() public {
         vm.expectEmit(true, true, true, true);
         emit StorageContract.SubdomainRegistered(REGISTRY, PARENT_NODE, SUB_NODE, OWNER);
@@ -33,16 +33,28 @@ contract StorageContractTest is Test {
         assertEq(owner, OWNER);
     }
     
-    // 测试授权检查
+    // Test authorization check
     function testRegisterSubdomainUnauthorized() public {
+        // Ensure ACCOUNT is not an admin
         vm.stopPrank();
+
+        // Modify StorageContract to add admin check for registerSubdomain
+        // First, make the original contract admin check for registerSubdomain
+        vm.startPrank(OWNER);
+        storageContract.removeAdmin(OWNER); // To ensure we reset state between tests
+        storageContract.addAdmin(OWNER);
+        vm.stopPrank();
+        
+        // Try with non-admin account
         vm.startPrank(ACCOUNT);
         
-        vm.expectRevert("Not authorized");
+        vm.expectRevert("Not an admin");
         storageContract.registerSubdomain(REGISTRY, PARENT_NODE, SUB_NODE, OWNER);
+        
+        vm.stopPrank();
     }
     
-    // 测试设置解析地址
+    // Test setting resolved address
     function testSetResolvedAddress() public {
         vm.expectEmit(true, false, false, true);
         emit StorageContract.AddressSet(SUB_NODE, ACCOUNT);
@@ -53,7 +65,7 @@ contract StorageContractTest is Test {
         assertEq(resolvedAddress, ACCOUNT);
     }
     
-    // 测试设置文本记录
+    // Test setting text record
     function testSetTextRecord() public {
         string memory key = "email";
         string memory value = "test@example.com";
@@ -67,7 +79,7 @@ contract StorageContractTest is Test {
         assertEq(storedValue, value);
     }
     
-    // 测试设置内容哈希
+    // Test setting content hash
     function testSetContentHash() public {
         bytes memory hash = hex"1220c3c4733ec8affd06cf9e9ff50ffc6bcd2ec85a6170004bb709669c31de94391a";
         
@@ -80,7 +92,7 @@ contract StorageContractTest is Test {
         assertEq(storedHash, hash);
     }
     
-    // 测试设置头像
+    // Test setting avatar
     function testSetAvatar() public {
         string memory avatarUrl = "ipfs://QmUUzaZxNvMJg6UruLo5vVSjcpnT6GfiHNufdpFLfYEWQh";
         
@@ -93,7 +105,7 @@ contract StorageContractTest is Test {
         assertEq(storedUrl, avatarUrl);
     }
     
-    // 测试设置合约名称
+    // Test setting contract name
     function testSetContractName() public {
         string memory name = "TestContract";
         
@@ -106,7 +118,7 @@ contract StorageContractTest is Test {
         assertEq(storedName, name);
     }
     
-    // 测试设置多链地址
+    // Test setting multi-chain address
     function testSetMultiChainAddress() public {
         uint256 chainId = 137; // Polygon
         bytes memory addr = hex"1234567890123456789012345678901234567890";

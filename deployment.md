@@ -6,28 +6,27 @@
 
 ```mermaid
 flowchart TD
-    User[User/Client] -->|1. Query ENS name| L1ENSRegistry[L1 ENS Registry]
-    L1ENSRegistry -->|2. Return Resolver address| User
-    User -->|3. Call resolve/addr| L1Resolver[L1 Resolver Contract]
-    L1Resolver -->|4. Throw OffchainLookup error| User
-    User -->|5. HTTP Request| Gateway[Unruggable Gateway]
-    Gateway -->|6. Fetch data and proof| L2[Optimism L2]
-    L2 -->|7. Return data and proof| Gateway
-    Gateway -->|8. Return data and proof| User
-    User -->|9. Call callback function| L1Resolver
-    L1Resolver -->|10. Call Verifier| Verifier[L1 Verifier Contract]
-    Verifier -->|11. Verify proof| L1Resolver
-    L1Resolver -->|12. Return resolution result| User
+    UserClient --> L1ENSRegistry
+    L1ENSRegistry --> UserClient
+    UserClient --> L1ResolverContract
+    L1ResolverContract --> UserClient
+    UserClient --> Gateway
+    Gateway --> OptimismL2
+    OptimismL2 --> Gateway
+    Gateway --> UserClient
+    UserClient --> L1ResolverContract
+    L1ResolverContract --> VerifierContract
+    VerifierContract --> L1ResolverContract
+    L1ResolverContract --> UserClient
 
-    subgraph Optimism_L2 [Optimism L2]
-        L2ENSRegistry[L2 ENS Registry]
-        StorageContract[Storage Contract]
-        ENSManager[ENS Manager Contract]
+    subgraph OptimismL2
+        L2ENSRegistry
+        StorageContract
+        ENSManager
+        ENSManager --> L2ENSRegistry
+        L2ENSRegistry --> StorageContract
     end
-
-    ENSManager -->|Manage domain| L2ENSRegistry
-    L2ENSRegistry -->|Read domain data| StorageContract
-```
+  ```
 
 ## 需要部署的合约
 

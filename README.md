@@ -3,45 +3,77 @@
 <img src="https://raw.githubusercontent.com/jhfnetboy/MarkDownImg/main/img/202504211257163.png" alt = "CometENS from   AAStar"/>    
 </p>
 
-# ENS Layer2 解析项目
+# ENS 解析器工厂
 
-一个基于Optimism Layer2的ENS域名解析解决方案，使用Unruggable Gateways技术确保数据安全可验证。
+## 项目简介
 
-## 项目概述
+ENS 解析器工厂是一个智能合约系统，允许用户轻松创建和管理自己的 ENS（以太坊域名服务）解析器实例。这个项目使用 Unruggable Gateways 技术，支持从 Optimism Layer2 安全地获取和验证 ENS 解析数据。
 
-本项目实现了一个完整的ENS域名Layer2解析系统，允许用户在Optimism上管理ENS域名，同时在以太坊主网上提供标准的解析服务。通过使用Unruggable Gateways技术，我们确保了Layer2数据可以被Layer1安全验证，从而实现了高效且安全的域名解析方案。
+## 主要特性
 
-### 主要功能
+- 一键创建 ENS 解析器实例
+- 自动转移解析器所有权给创建者
+- 全局和用户级别的解析器管理
+- 支持多链地址解析
+- 集成网关验证机制确保数据安全性
 
-- 在Optimism上存储和管理ENS域名数据
-- 在以太坊主网上解析指向Optimism的ENS域名
-- 注册和管理子域名
-- 设置各种记录类型（地址、文本、内容哈希等）
-- 前端界面用于域名管理和解析
+## 架构
 
-## 安装
+项目包含以下主要组件：
+
+1. **ENSResolverFactory**: 创建和管理解析器实例的工厂合约
+2. **ENSResolver**: 实现标准 ENS 解析接口的解析器合约
+3. **GatewayVerifier**: 验证网关和 DNS 区域的合约
+4. **部署脚本**: 简化合约部署流程
+5. **测试套件**: 确保合约功能正常
+
+有关更详细的架构说明，请参阅 [CONTRACT_RELATIONS.md](CONTRACT_RELATIONS.md)。
+
+## 安装与使用
 
 ### 前置条件
 
-- Node.js >= 16
-- Bun >= 1.0
-- Foundry (Forge, Cast, Anvil)
+- Foundry 工具链（安装指南：https://book.getfoundry.sh/getting-started/installation）
+- Node.js 和 npm（用于前端开发）
+- 以太坊钱包和一些测试网 ETH
 
-### 克隆仓库
+### 安装
 
-```bash
-git clone https://github.com/your-username/unruggable-gateways-ens-resolution-demos.git
-cd unruggable-gateways-ens-resolution-demos
-```
+1. 克隆仓库：
+   ```bash
+   git clone https://github.com/yourusername/unruggable-gateways-ens-resolution-demos.git
+   cd unruggable-gateways-ens-resolution-demos
+   ```
 
-### 安装依赖
+2. 安装依赖：
+   ```bash
+   forge install
+   ```
 
-```bash
-bun install
-forge install
-```
+### 部署
 
-## 合约开发与测试
+1. 创建 `.env` 文件并添加以下配置：
+   ```
+   PRIVATE_KEY=your_private_key
+   ENS_REGISTRY_ADDRESS=0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e # 以太坊主网 ENS Registry
+   # 可选，如果你已经部署了这些合约
+   GATEWAY_VERIFIER_ADDRESS=your_verifier_address
+   ```
+
+2. 部署 ENSResolverFactory：
+   ```bash
+   forge script script/DeployENSResolverFactory.s.sol --rpc-url <your_rpc_url> --broadcast
+   ```
+
+### 创建和使用解析器
+
+一旦工厂合约部署好，用户可以：
+
+1. 调用 `createResolver(string name)` 创建自己的解析器
+2. 使用 `getUserResolvers(address user)` 获取用户创建的所有解析器
+3. 在创建的解析器上设置各种 ENS 记录
+
+## 开发
 
 ### 编译合约
 
@@ -52,86 +84,20 @@ forge build
 ### 运行测试
 
 ```bash
-forge test -vv
+forge test
 ```
 
-### 部署合约
-
-1. 首先，创建一个`.env`文件并设置所需环境变量：
-
-```
-PRIVATE_KEY=your_private_key
-OPTIMISM_RPC_URL=your_optimism_rpc_url
-ETHEREUM_RPC_URL=your_ethereum_rpc_url
-ENS_ROOT_NAME=your_ens_name.eth
-```
-
-2. 部署L2合约：
+### 测试特定合约
 
 ```bash
-forge script script/DeployL2Contracts.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast
+forge test --match-contract ENSResolverFactoryTest -vv
 ```
-
-3. 部署L1合约：
-
-```bash
-forge script script/DeployL1Contracts.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast
-```
-
-4. 设置Resolver：
-
-```bash
-forge script script/SetupResolver.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast
-```
-
-## 前端开发
-
-### 运行前端
-
-```bash
-cd frontend
-pnpm install  # 或 npm install
-pnpm dev      # 或 npm run dev
-```
-
-### 构建前端
-
-```bash
-cd frontend
-pnpm build    # 或 npm run build
-```
-
-## 测试解析
-
-运行端到端测试脚本，测试域名解析：
-
-```bash
-bun test-resolution.ts
-```
-
-## 项目结构
-
-- `contracts/`: 智能合约源代码
-  - `StorageContract.sol`: L2数据存储合约
-  - `ENSManager.sol`: L2域名管理合约
-  - `OPResolver.sol`: L1域名解析合约
-- `script/`: 部署脚本
-  - `DeployL2Contracts.s.sol`: L2合约部署脚本
-  - `DeployL1Contracts.s.sol`: L1合约部署脚本
-  - `SetupResolver.s.sol`: Resolver设置脚本
-- `test/`: 测试文件
-  - `StorageContract.t.sol`: 存储合约测试
-  - `ENSManager.t.sol`: 管理合约测试
-- `frontend/`: 前端应用
-  - `src/`: 前端源代码
-    - `hooks/`: React钩子
-    - `components/`: React组件
 
 ## 文档
 
-- [FEATURES.md](FEATURES.md): 功能列表
-- [PLAN.md](PLAN.md): 开发计划
-- [CHANGES.md](CHANGES.md): 变更记录
+- [FEATURES.md](FEATURES.md) - 详细功能列表
+- [CHANGES.md](CHANGES.md) - 版本历史和变更记录
+- [CONTRACT_RELATIONS.md](CONTRACT_RELATIONS.md) - 合约关系和架构说明
 
 ## 许可证
 
