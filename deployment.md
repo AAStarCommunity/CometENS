@@ -5,7 +5,7 @@
 ## 系统架构
 
 ```mermaid
-graph TD
+flowchart TD
     User[用户/客户端] -->|1. 查询 ENS 名称| L1ENSRegistry[L1 ENS Registry]
     L1ENSRegistry -->|2. 返回 Resolver 地址| User
     User -->|3. 调用 resolve/addr| L1Resolver[L1 Resolver 合约]
@@ -19,7 +19,7 @@ graph TD
     Verifier -->|11. 验证证明| L1Resolver
     L1Resolver -->|12. 返回解析结果| User
     
-    subgraph "L2 - Optimism"
+    subgraph L2[Optimism L2]
         L2ENSRegistry[L2 ENS Registry]
         StorageContract[存储合约]
         ENSManager[ENS 管理合约]
@@ -27,75 +27,195 @@ graph TD
     
     ENSManager -->|管理域名| L2ENSRegistry
     L2ENSRegistry -->|读取域名数据| StorageContract
-    L2 -.->|包含| L2ENSRegistry
-    L2 -.->|包含| StorageContract
-    L2 -.->|包含| ENSManager
 ```
 
 ## 需要部署的合约
 
 ### L2 (Optimism) 合约
 
-1. **ENS Registry**
-   - 目的：存储域名层级结构
-   - 源码：https://github.com/ensdomains/ens-contracts/blob/master/contracts/registry/ENSRegistry.sol
+#### 1. **ENS Registry**
+   - **目的**：存储域名层级结构
+   - **源码**：https://github.com/ensdomains/ens-contracts/blob/master/contracts/registry/ENSRegistry.sol
+   - **部署方式**：可以直接使用 ENS 原始合约，无需修改
+   - **具体脚本路径**：`script/DeployENSRegistry.s.sol`
 
-2. **存储合约**
-   - 目的：存储域名解析数据
-   - 源码：需要根据 OPResolver.sol 中引用的 STORAGE_CONTRACT_ADDRESS 合约接口实现
+#### 2. **存储合约**
+   - **目的**：存储域名解析数据
+   - **源码**：需要根据 OPResolver.sol 中引用的 STORAGE_CONTRACT_ADDRESS 合约接口实现
+   - **开发**：根据下方提供的实现示例开发
+   - **具体脚本路径**：`script/DeployStorageContract.s.sol`
 
-3. **ENS Manager**
-   - 目的：管理域名注册和子域名
-   - 源码：https://github.com/ensdomains/ens-contracts/blob/master/contracts/registry/ENSRegistryWithFallback.sol (可修改适配)
+#### 3. **ENS Manager**
+   - **目的**：管理域名注册和子域名
+   - **源码**：基于 https://github.com/ensdomains/ens-contracts/blob/master/contracts/registry/ENSRegistryWithFallback.sol 修改
+   - **开发**：需要扩展原始合约以实现所有优先级功能
+   - **具体脚本路径**：`script/DeployENSManager.s.sol`
+   - **功能实现**：详见下方功能实现部分
 
 ### L1 (以太坊主网) 合约
 
-1. **OPFaultVerifier**
-   - 目的：验证从 Optimism 获取的数据证明
-   - 源码：本仓库中的引用 `@unruggable/contracts/op/OPFaultVerifier.sol`
+#### 1. **OPFaultVerifier**
+   - **目的**：验证从 Optimism 获取的数据证明
+   - **源码**：`@unruggable/contracts/op/OPFaultVerifier.sol`
+   - **开发**：无需开发，直接使用 Unruggable Gateways 提供的合约
+   - **具体脚本路径**：`script/DeployOPFaultVerifier.s.sol`
 
-2. **OPResolver**
-   - 目的：实现 CCIP Read 协议，连接到 Gateway
-   - 源码：本仓库的 `contracts/OPResolver.sol`
+#### 2. **OPResolver**
+   - **目的**：实现 CCIP Read 协议，连接到 Gateway
+   - **源码**：`contracts/OPResolver.sol`
+   - **开发**：无需修改，直接使用仓库提供的合约
+   - **具体脚本路径**：`script/DeployOPResolver.s.sol`
 
-## 前端代码实现
+## 开发部分
 
-推荐使用以下开源项目作为前端实现的参考：
+### 1. 创建存储合约 (StorageContract.sol)
 
-1. **ENS App**
-   - 官方 ENS 管理应用
-   - 源码：https://github.com/ensdomains/ens-app-v3
+在仓库根目录下创建 `contracts/StorageContract.sol`：
 
-2. **ENS Offchain Registrar**
-   - 提供离链解析的参考实现
-   - 源码：https://github.com/gskril/ens-offchain-registrar
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
 
-3. **ethers.js 库**
-   - 用于处理 ENS 解析和 CCIP Read 协议
-   - 文档：https://docs.ethers.org/v5/api/providers/provider/#Provider-resolveName
-
-## 部署步骤
-
-### 1. 环境准备
-
-```bash
-# 克隆仓库
-git clone https://github.com/unruggable-labs/unruggable-gateways-ens-resolution-demos.git
-cd unruggable-gateways-ens-resolution-demos
-
-# 安装依赖
-curl -fsSL https://bun.sh/install | bash
-bun install
-forge install
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 添加以太坊和 Optimism 节点的 API keys
+// 基于 OPResolver.sol 中引用的接口需求实现
+contract StorageContract {
+    // ENS节点到解析器的映射
+    mapping(address => mapping(bytes32 => address)) public registries;
+    
+    // 存储域名解析数据
+    mapping(bytes32 => address) public resolvedAddresses;
+    
+    // 存储文本记录
+    mapping(bytes32 => mapping(string => string)) public textRecords;
+    
+    // 存储内容哈希
+    mapping(bytes32 => bytes) public contentHashes;
+    
+    // 存储头像
+    mapping(bytes32 => string) public avatars;
+    
+    // 存储合约名称
+    mapping(bytes32 => string) public contractNames;
+    
+    // 存储多链地址
+    mapping(bytes32 => mapping(uint256 => bytes)) public multiChainAddresses;
+    
+    // 注册子域名
+    function registerSubdomain(address registry, bytes32 parentNode, bytes32 subNode, address owner) external {
+        require(msg.sender == owner, "Not authorized");
+        registries[registry][subNode] = owner;
+    }
+    
+    // 设置解析地址
+    function setResolvedAddress(bytes32 node, address addr) external {
+        resolvedAddresses[node] = addr;
+    }
+    
+    // 设置文本记录
+    function setTextRecord(bytes32 node, string calldata key, string calldata value) external {
+        textRecords[node][key] = value;
+    }
+    
+    // 设置内容哈希
+    function setContentHash(bytes32 node, bytes calldata hash) external {
+        contentHashes[node] = hash;
+    }
+    
+    // 设置头像
+    function setAvatar(bytes32 node, string calldata avatarUrl) external {
+        avatars[node] = avatarUrl;
+    }
+    
+    // 设置合约名称
+    function setContractName(bytes32 node, string calldata name) external {
+        contractNames[node] = name;
+    }
+    
+    // 设置多链地址
+    function setMultiChainAddress(bytes32 node, uint256 chainId, bytes calldata addr) external {
+        multiChainAddresses[node][chainId] = addr;
+    }
+}
 ```
 
-### 2. L2 (Optimism) 合约部署
+### 2. 创建 ENS Manager (ENSManager.sol)
 
-以下是使用 Forge 部署 L2 合约的脚本示例：
+在仓库根目录下创建 `contracts/ENSManager.sol`：
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
+import "./StorageContract.sol";
+
+contract ENSManager {
+    ENSRegistry public ensRegistry;
+    StorageContract public storageContract;
+    
+    // 记录域名标签到节点的映射
+    mapping(bytes32 => bool) public domains;
+    
+    constructor(address _ensRegistry, address _storageContract) {
+        ensRegistry = ENSRegistry(_ensRegistry);
+        storageContract = StorageContract(_storageContract);
+    }
+    
+    // 注册子域名
+    function registerSubdomain(bytes32 parentNode, string calldata label, address owner) external {
+        // 计算子域名的namehash
+        bytes32 labelNode = keccak256(bytes(label));
+        bytes32 subnode = keccak256(abi.encodePacked(parentNode, labelNode));
+        
+        // 在 ENS Registry 中注册域名
+        ensRegistry.setSubnodeOwner(parentNode, labelNode, owner);
+        
+        // 在存储合约中记录
+        storageContract.registerSubdomain(address(ensRegistry), parentNode, subnode, owner);
+    }
+    
+    // 设置域名解析地址
+    function setAddr(bytes32 node, address addr) external {
+        require(ensRegistry.owner(node) == msg.sender, "Not authorized");
+        storageContract.setResolvedAddress(node, addr);
+    }
+    
+    // 设置文本记录
+    function setText(bytes32 node, string calldata key, string calldata value) external {
+        require(ensRegistry.owner(node) == msg.sender, "Not authorized");
+        storageContract.setTextRecord(node, key, value);
+    }
+    
+    // 设置内容哈希
+    function setContentHash(bytes32 node, bytes calldata hash) external {
+        require(ensRegistry.owner(node) == msg.sender, "Not authorized");
+        storageContract.setContentHash(node, hash);
+    }
+    
+    // 设置头像
+    function setAvatar(bytes32 node, string calldata avatarUrl) external {
+        require(ensRegistry.owner(node) == msg.sender, "Not authorized");
+        storageContract.setAvatar(node, avatarUrl);
+    }
+    
+    // 设置合约名称
+    function setContractName(bytes32 node, string calldata name) external {
+        require(ensRegistry.owner(node) == msg.sender, "Not authorized");
+        storageContract.setContractName(node, name);
+    }
+    
+    // 设置多链地址
+    function setMultiChainAddress(bytes32 node, uint256 chainId, bytes calldata addr) external {
+        require(ensRegistry.owner(node) == msg.sender, "Not authorized");
+        storageContract.setMultiChainAddress(node, chainId, addr);
+    }
+}
+```
+
+## 部署脚本
+
+### 1. L2 部署脚本
+
+#### 创建 `script/DeployL2Contracts.s.sol`:
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -103,12 +223,15 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
 import "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
-import "./StorageContract.sol"; // 实现的存储合约
-import "./ENSManager.sol"; // 实现的管理合约
+import "../contracts/StorageContract.sol";
+import "../contracts/ENSManager.sol";
 
 contract DeployL2Contracts is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        string memory rootName = vm.envString("ENS_ROOT_NAME");
+        bytes32 rootNode = namehash(rootName);
+        
         vm.startBroadcast(deployerPrivateKey);
 
         // 部署 ENS Registry
@@ -116,35 +239,74 @@ contract DeployL2Contracts is Script {
         console.log("ENS Registry deployed at:", address(registry));
 
         // 部署存储合约
-        StorageContract storage = new StorageContract();
-        console.log("Storage Contract deployed at:", address(storage));
+        StorageContract storageContract = new StorageContract();
+        console.log("Storage Contract deployed at:", address(storageContract));
 
         // 部署管理合约
-        ENSManager manager = new ENSManager(address(registry));
+        ENSManager manager = new ENSManager(address(registry), address(storageContract));
         console.log("ENS Manager deployed at:", address(manager));
 
-        // 设置 ENS 根域名的所有者为管理合约
-        bytes32 rootNode = 0x0000000000000000000000000000000000000000000000000000000000000000;
-        registry.setOwner(rootNode, address(manager));
+        // 设置根域名所有者为部署者
+        registry.setOwner(rootNode, msg.sender);
+        console.log("Root domain owner set to deployer");
 
         vm.stopBroadcast();
+        
+        // 将部署地址写入文件以便后续使用
+        string memory deploymentInfo = string(abi.encodePacked(
+            "ENS_REGISTRY_ADDRESS=", vm.toString(address(registry)), "\n",
+            "STORAGE_CONTRACT_ADDRESS=", vm.toString(address(storageContract)), "\n",
+            "ENS_MANAGER_ADDRESS=", vm.toString(address(manager)), "\n"
+        ));
+        vm.writeFile("deployments/l2_contracts.env", deploymentInfo);
+        console.log("Deployment info written to deployments/l2_contracts.env");
+    }
+    
+    // 辅助函数：计算 namehash
+    function namehash(string memory name) internal pure returns (bytes32) {
+        bytes32 node = 0x0000000000000000000000000000000000000000000000000000000000000000;
+        
+        if (bytes(name).length == 0) {
+            return node;
+        }
+        
+        // 按标签分割并计算 namehash
+        uint256 dotPos = 0;
+        uint256 len = bytes(name).length;
+        
+        for (uint256 i = 0; i < len; i++) {
+            if (bytes(name)[i] == '.') {
+                if (i - dotPos > 0) {
+                    string memory label = substring(name, dotPos, i - dotPos);
+                    node = keccak256(abi.encodePacked(node, keccak256(bytes(label))));
+                }
+                dotPos = i + 1;
+            }
+        }
+        
+        if (dotPos < len) {
+            string memory label = substring(name, dotPos, len - dotPos);
+            node = keccak256(abi.encodePacked(node, keccak256(bytes(label))));
+        }
+        
+        return node;
+    }
+    
+    // 辅助函数：字符串截取
+    function substring(string memory str, uint256 startIndex, uint256 length) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = strBytes[startIndex + i];
+        }
+        return string(result);
     }
 }
 ```
 
-部署命令：
+### 2. L1 部署脚本
 
-```bash
-# 编译合约
-forge build
-
-# 部署到 Optimism 测试网
-forge script script/DeployL2Contracts.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast --verify
-```
-
-### 3. L1 (以太坊主网) 合约部署
-
-以下是使用 Forge 部署 L1 合约的脚本示例：
+#### 创建 `script/DeployL1Contracts.s.sol`:
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -154,64 +316,123 @@ import "forge-std/Script.sol";
 import "@unruggable/contracts/op/OPFaultVerifier.sol";
 import "@unruggable/contracts/GatewayVM.sol";
 import "../contracts/OPResolver.sol";
+import "@unruggable/contracts/eth/EthVerifierHooks.sol";
+import "@unruggable/test/gateway/FixedOPFaultGameFinder.sol";
 
 contract DeployL1Contracts is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        
+        // 读取 L2 部署信息
+        string memory content = vm.readFile("deployments/l2_contracts.env");
+        string memory storageContractAddressStr = extractValue(content, "STORAGE_CONTRACT_ADDRESS=");
+        
         vm.startBroadcast(deployerPrivateKey);
 
-        // 部署 GatewayVM 库
+        // 1. 部署 GatewayVM 库
         GatewayVM gatewayVM = new GatewayVM();
         console.log("GatewayVM deployed at:", address(gatewayVM));
 
-        // 获取 rollup 配置
-        address optimismPortal = 0x0000000000000000000000000000000000000000; // 替换为实际地址
-        address gameFinder = 0x0000000000000000000000000000000000000000; // 替换为实际地址
-        uint256 gameTypeBitMask = 1; // 替换为实际值
-        uint256 minAgeSec = 3600; // 替换为实际值
+        // 2. 部署 EthVerifierHooks
+        EthVerifierHooks hooks = new EthVerifierHooks();
+        console.log("EthVerifierHooks deployed at:", address(hooks));
 
-        // 部署 EthVerifierHooks
-        address hooks = 0x0000000000000000000000000000000000000000; // 替换为实际地址
+        // 3. 获取 Optimism 参数
+        // 从环境变量或默认值获取
+        address optimismPortal = vm.envOr("OPTIMISM_PORTAL", address(0xbEb5Fc579115071764c7423A4f12eDde41f106Ed));
+        
+        // 计算当前区块 commit index 或使用默认值
+        uint256 commitIndex = vm.envOr("COMMIT_INDEX", uint256(1000));
+        
+        // 4. 部署 FixedOPFaultGameFinder
+        FixedOPFaultGameFinder gameFinder = new FixedOPFaultGameFinder(commitIndex);
+        console.log("FixedOPFaultGameFinder deployed at:", address(gameFinder));
+        
+        uint256 gameTypeBitMask = 1; // Optimism 的默认值
+        uint256 minAgeSec = 3600; // 1小时
 
-        // 部署 OPFaultVerifier
+        // 5. 部署 OPFaultVerifier
         string[] memory gatewayUrls = new string[](1);
         gatewayUrls[0] = "https://optimism.gateway.unruggable.com";
 
-        uint256 defaultWindow = 1000000; // 替换为实际值
+        uint256 defaultWindow = 1000000; // 默认值
 
         OPFaultVerifier verifier = new OPFaultVerifier(
             gatewayUrls,
             defaultWindow,
-            hooks,
+            address(hooks),
             optimismPortal,
-            gameFinder,
+            address(gameFinder),
             gameTypeBitMask,
             minAgeSec
         );
         console.log("OPFaultVerifier deployed at:", address(verifier));
 
-        // 部署 OPResolver
+        // 6. 部署 OPResolver
+        // 将存储合约地址转为 address
+        address storageContractAddress = address(bytes20(bytes(storageContractAddressStr)));
+        
         OPResolver resolver = new OPResolver(IGatewayVerifier(address(verifier)));
         console.log("OPResolver deployed at:", address(resolver));
 
         vm.stopBroadcast();
+        
+        // 将部署地址写入文件以便后续使用
+        string memory deploymentInfo = string(abi.encodePacked(
+            "GATEWAY_VM_ADDRESS=", vm.toString(address(gatewayVM)), "\n",
+            "ETH_VERIFIER_HOOKS_ADDRESS=", vm.toString(address(hooks)), "\n",
+            "GAME_FINDER_ADDRESS=", vm.toString(address(gameFinder)), "\n",
+            "OP_FAULT_VERIFIER_ADDRESS=", vm.toString(address(verifier)), "\n",
+            "OP_RESOLVER_ADDRESS=", vm.toString(address(resolver)), "\n"
+        ));
+        vm.writeFile("deployments/l1_contracts.env", deploymentInfo);
+        console.log("Deployment info written to deployments/l1_contracts.env");
+    }
+    
+    // 辅助函数：从字符串中提取键值对
+    function extractValue(string memory content, string memory key) internal pure returns (string memory) {
+        bytes memory contentBytes = bytes(content);
+        bytes memory keyBytes = bytes(key);
+        
+        uint256 pos = indexOf(contentBytes, keyBytes, 0);
+        if (pos == type(uint256).max) return "";
+        
+        pos += keyBytes.length;
+        uint256 endPos = indexOf(contentBytes, bytes("\n"), pos);
+        if (endPos == type(uint256).max) endPos = contentBytes.length;
+        
+        bytes memory valueBytes = new bytes(endPos - pos);
+        for (uint256 i = 0; i < endPos - pos; i++) {
+            valueBytes[i] = contentBytes[pos + i];
+        }
+        
+        return string(valueBytes);
+    }
+    
+    // 辅助函数：查找子字符串位置
+    function indexOf(bytes memory haystack, bytes memory needle, uint256 start) internal pure returns (uint256) {
+        if (needle.length == 0) return start;
+        if (haystack.length < needle.length) return type(uint256).max;
+        
+        for (uint256 i = start; i <= haystack.length - needle.length; i++) {
+            bool found = true;
+            for (uint256 j = 0; j < needle.length; j++) {
+                if (haystack[i + j] != needle[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return i;
+        }
+        
+        return type(uint256).max;
     }
 }
 ```
 
-部署命令：
+### 3. Resolver 配置脚本
 
-```bash
-# 编译合约
-forge build
-
-# 部署到以太坊测试网
-forge script script/DeployL1Contracts.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast --verify
-```
-
-### 4. 配置 ENS Resolver
-
-部署完成后，需要将域名的 Resolver 设置为已部署的 OPResolver。以下是示例脚本：
+#### 创建 `script/SetupResolver.s.sol`:
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -219,212 +440,302 @@ pragma solidity ^0.8.25;
 
 import "forge-std/Script.sol";
 import "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
+import "ethers/ethers.sol";
 
 contract SetupResolver is Script {
     function run() external {
         uint256 ownerPrivateKey = vm.envUint("PRIVATE_KEY");
+        string memory rootName = vm.envString("ENS_ROOT_NAME");
+        
+        // 读取 L1 部署信息
+        string memory content = vm.readFile("deployments/l1_contracts.env");
+        string memory resolverAddressStr = extractValue(content, "OP_RESOLVER_ADDRESS=");
+        address resolverAddress = address(bytes20(bytes(resolverAddressStr)));
+        
         vm.startBroadcast(ownerPrivateKey);
 
         // 以太坊主网 ENS Registry 地址
         address ensRegistry = 0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e;
         
-        // 已部署的 OPResolver 地址
-        address opResolver = 0x0000000000000000000000000000000000000000; // 替换为实际地址
-        
-        // 要设置 Resolver 的域名
-        bytes32 node = 0x0000000000000000000000000000000000000000000000000000000000000000; // 替换为实际域名的 namehash
+        // 计算域名的 namehash
+        bytes32 node = namehash(rootName);
         
         // 设置 Resolver
-        ENSRegistry(ensRegistry).setResolver(node, opResolver);
+        ENSRegistry(ensRegistry).setResolver(node, resolverAddress);
         console.log("Resolver set for node:", vm.toString(node));
 
         vm.stopBroadcast();
     }
+    
+    // 辅助函数：计算 namehash
+    function namehash(string memory name) internal pure returns (bytes32) {
+        bytes32 node = 0x0000000000000000000000000000000000000000000000000000000000000000;
+        
+        if (bytes(name).length == 0) {
+            return node;
+        }
+        
+        // 按标签分割并计算 namehash
+        uint256 dotPos = 0;
+        uint256 len = bytes(name).length;
+        
+        for (uint256 i = 0; i < len; i++) {
+            if (bytes(name)[i] == '.') {
+                if (i - dotPos > 0) {
+                    string memory label = substring(name, dotPos, i - dotPos);
+                    node = keccak256(abi.encodePacked(node, keccak256(bytes(label))));
+                }
+                dotPos = i + 1;
+            }
+        }
+        
+        if (dotPos < len) {
+            string memory label = substring(name, dotPos, len - dotPos);
+            node = keccak256(abi.encodePacked(node, keccak256(bytes(label))));
+        }
+        
+        return node;
+    }
+    
+    // 辅助函数：字符串截取
+    function substring(string memory str, uint256 startIndex, uint256 length) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = strBytes[startIndex + i];
+        }
+        return string(result);
+    }
+    
+    // 辅助函数：从字符串中提取键值对
+    function extractValue(string memory content, string memory key) internal pure returns (string memory) {
+        bytes memory contentBytes = bytes(content);
+        bytes memory keyBytes = bytes(key);
+        
+        uint256 pos = indexOf(contentBytes, keyBytes, 0);
+        if (pos == type(uint256).max) return "";
+        
+        pos += keyBytes.length;
+        uint256 endPos = indexOf(contentBytes, bytes("\n"), pos);
+        if (endPos == type(uint256).max) endPos = contentBytes.length;
+        
+        bytes memory valueBytes = new bytes(endPos - pos);
+        for (uint256 i = 0; i < endPos - pos; i++) {
+            valueBytes[i] = contentBytes[pos + i];
+        }
+        
+        return string(valueBytes);
+    }
+    
+    // 辅助函数：查找子字符串位置
+    function indexOf(bytes memory haystack, bytes memory needle, uint256 start) internal pure returns (uint256) {
+        if (needle.length == 0) return start;
+        if (haystack.length < needle.length) return type(uint256).max;
+        
+        for (uint256 i = start; i <= haystack.length - needle.length; i++) {
+            bool found = true;
+            for (uint256 j = 0; j < needle.length; j++) {
+                if (haystack[i + j] != needle[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return i;
+        }
+        
+        return type(uint256).max;
+    }
 }
 ```
 
-执行命令：
+## 部署命令汇总
+
+### 准备环境
 
 ```bash
+# 创建部署目录
+mkdir -p deployments
+
+# 创建脚本目录
+mkdir -p script
+
+# 检查环境变量配置
+echo $PRIVATE_KEY
+echo $ENS_ROOT_NAME
+
+# 如果没有设置环境变量
+export PRIVATE_KEY=你的私钥
+export ENS_ROOT_NAME=aastar.eth
+export OPTIMISM_RPC_URL=你的Optimism节点URL
+export ETHEREUM_RPC_URL=你的以太坊节点URL
+```
+
+### L2 部署命令
+
+```bash
+# 编译合约
+forge build
+
+# 部署 L2 合约到 Optimism
+forge script script/DeployL2Contracts.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast --verify
+```
+
+### L1 部署命令
+
+```bash
+# 编译合约
+forge build
+
+# 部署 L1 合约到以太坊
+forge script script/DeployL1Contracts.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast --verify
+```
+
+### 配置 Resolver
+
+```bash
+# 在以太坊主网上设置 Resolver
 forge script script/SetupResolver.s.sol --rpc-url $ETHEREUM_RPC_URL --broadcast
 ```
 
-### 5. 部署 Gateway 服务
+## 测试命令
 
-克隆和部署 Unruggable Gateway：
-
-```bash
-# 克隆 Gateway 仓库
-git clone https://github.com/unruggable-labs/unruggable-gateways.git
-cd unruggable-gateways
-
-# 安装依赖
-npm install
-
-# 配置 Gateway
-# 编辑 config.js 配置 Optimism 节点和其他参数
-
-# 启动 Gateway
-npm start
-```
-
-确保 Gateway 是公开可访问的，可以使用云服务如 AWS, Google Cloud, 或 Digital Ocean 部署。
-
-## 测试方案
-
-### 1. 本地测试
-
-使用本仓库中的示例脚本进行本地测试：
+### 本地测试
 
 ```bash
 # 使用 Foundry fork 进行本地测试
 bun run optimism.ts
 ```
 
-### 2. 端到端测试
-
-创建以下测试脚本，测试完整的解析流程：
-
-```typescript
-// test-resolution.ts
-import { ethers } from 'ethers';
-
-async function testResolution() {
-  // 连接到以太坊主网
-  const provider = new ethers.JsonRpcProvider('YOUR_ETHEREUM_RPC_URL');
-  
-  // 要测试的 ENS 名称
-  const ensName = 'your-test-name.eth';
-  
-  try {
-    // 尝试解析 ENS 名称
-    console.log(`Resolving ${ensName}...`);
-    const address = await provider.resolveName(ensName);
-    
-    console.log(`Resolution successful! Address: ${address}`);
-  } catch (error) {
-    console.error('Resolution failed:', error);
-  }
-}
-
-testResolution().catch(console.error);
-```
-
-执行测试：
+### 单元测试
 
 ```bash
-bun run test-resolution.ts
-```
-
-### 3. 合约单元测试
-
-创建以下 Forge 测试文件测试 Resolver 合约：
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
-
-import "forge-std/Test.sol";
-import "../contracts/OPResolver.sol";
-import "@unruggable/contracts/mocks/MockVerifier.sol";
-
-contract OPResolverTest is Test {
-    OPResolver resolver;
-    MockVerifier verifier;
-    
-    function setUp() public {
-        // 部署 mock verifier
-        verifier = new MockVerifier();
-        
-        // 部署 resolver
-        resolver = new OPResolver(IGatewayVerifier(address(verifier)));
-    }
-    
-    function testSupportsInterface() public {
-        // 测试 resolver 是否支持正确的接口
-        bytes4 interfaceId = type(IExtendedResolver).interfaceId;
-        assertTrue(resolver.supportsInterface(interfaceId));
-    }
-    
-    function testResolve() public {
-        // 准备测试数据
-        bytes memory name = bytes("unruggable.eth");
-        bytes memory data = abi.encodeWithSelector(IAddrResolver.addr.selector, bytes32(0));
-        
-        // 预设 mock 验证器的返回值
-        bytes[] memory results = new bytes[](3);
-        results[0] = bytes("registry");
-        results[1] = bytes("resolver");
-        results[2] = abi.encodePacked(address(0x1234567890123456789012345678901234567890));
-        verifier.setResults(results);
-        
-        // 调用 resolve 函数
-        bytes memory result = resolver.resolve(name, data);
-        
-        // 验证结果
-        address resolved = abi.decode(result, (address));
-        assertEq(resolved, address(0x1234567890123456789012345678901234567890));
-    }
-}
-```
-
-执行测试：
-
-```bash
+# 运行 Forge 单元测试
 forge test
 ```
 
-## 链上交互脚本
+### 端到端测试
 
-以下脚本展示如何与已部署的系统进行交互：
+```bash
+# 运行端到端测试
+bun run test-resolution.ts
+```
+
+## 前端实现指南
+
+对于前端实现，我们将基于 ENS App v3 进行修改：
+
+### 1. 克隆 ENS App 仓库
+
+```bash
+git clone https://github.com/ensdomains/ens-app-v3.git
+cd ens-app-v3
+```
+
+### 2. 安装依赖
+
+```bash
+pnpm install
+```
+
+### 3. 配置 L2 解析支持
+
+需要修改 `src/hooks/useResolver.ts` 文件，添加 Optimism 链支持：
 
 ```typescript
-// interact.ts
-import { ethers } from 'ethers';
+// src/hooks/useResolver.ts
+import { useProvider } from 'wagmi'
+import { getResolver } from '@ensdomains/ensjs'
 
-// ENS Registry ABI
-const ENS_REGISTRY_ABI = [
-  'function resolver(bytes32 node) view returns (address)',
-  'function owner(bytes32 node) view returns (address)',
-  'function setResolver(bytes32 node, address resolver)',
-  'function setOwner(bytes32 node, address owner)'
-];
-
-// 连接到以太坊主网
-const provider = new ethers.JsonRpcProvider('YOUR_ETHEREUM_RPC_URL');
-const wallet = new ethers.Wallet('YOUR_PRIVATE_KEY', provider);
-
-// ENS Registry 地址
-const ENS_REGISTRY_ADDRESS = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
-const registry = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, wallet);
-
-// 域名 namehash
-const namehash = ethers.namehash('your-domain.eth');
-
-async function setResolver() {
-  // 你部署的 Resolver 地址
-  const resolverAddress = 'YOUR_RESOLVER_ADDRESS';
+export function useResolver(name: string) {
+  const provider = useProvider()
   
-  // 设置 Resolver
-  const tx = await registry.setResolver(namehash, resolverAddress);
-  await tx.wait();
-  console.log(`Resolver set to ${resolverAddress} for domain`);
+  const fetchResolver = async () => {
+    try {
+      // 获取 ENS Resolver
+      const resolver = await provider.getResolver(name)
+      return resolver
+    } catch (e) {
+      console.error('Error resolving ENS name:', e)
+      return null
+    }
+  }
+  
+  // 在这里可以添加 L2 解析支持
+  return {
+    fetchResolver,
+  }
 }
-
-async function checkResolution() {
-  // 检查是否能解析
-  const address = await provider.resolveName('your-domain.eth');
-  console.log(`Resolved address: ${address}`);
-}
-
-// 运行脚本
-async function main() {
-  await setResolver();
-  await checkResolution();
-}
-
-main().catch(console.error);
 ```
+
+### 4. 实现功能列表
+
+基于用户的需求，实现以下功能页面：
+
+1. **Resolve ENS domain to address**
+   - 创建 `src/pages/resolve.tsx` 页面
+   - 提供域名输入框和查询按钮
+   - 调用 ethers.js 的 `provider.resolveName()` 方法
+
+2. **Register subdomain**
+   - 修改 `src/pages/profile.tsx` 页面
+   - 添加子域名注册表单
+   - 使用 Web3 连接 ENSManager 合约
+
+3. **Set subdomain resolution address**
+   - 在子域名管理页面中添加解析地址设置表单
+   - 调用 ENSManager 合约的 `setAddr` 方法
+
+4. **Resolve subdomain on Layer2**
+   - 添加 L2 解析选项
+   - 实现 L2 解析逻辑
+
+5. **Set text record**
+   - 添加文本记录管理页面
+   - 调用 ENSManager 合约的 `setText` 方法
+
+6. **Set Content Hash**
+   - 添加内容哈希设置页面
+   - 调用 ENSManager 合约的 `setContentHash` 方法
+
+7. **Set ENS avatar**
+   - 添加头像设置页面
+   - 调用 ENSManager 合约的 `setAvatar` 方法
+   - 可以使用 IPFS 存储头像图片
+
+8. **Set contract name**
+   - 添加合约名称设置页面
+   - 调用 ENSManager 合约的 `setContractName` 方法
+
+9. **Set multichain address**
+   - 添加多链地址设置页面
+   - 调用 ENSManager 合约的 `setMultiChainAddress` 方法
+   - 提供常见链的选择列表
+
+### 5. 启动前端应用
+
+```bash
+pnpm dev
+```
+
+## 关于 ENS Resolver 配置的说明
+
+对于您的问题 "配置 ENS Resolver 的操作，可以在 L1 的 ENS 管理界面设置么？"：
+
+是的，可以通过 ENS 官方的管理界面 (https://app.ens.domains/) 来设置您域名的 Resolver。具体步骤：
+
+1. 打开 ENS App (https://app.ens.domains/)
+2. 连接您拥有 ENS 域名的钱包
+3. 搜索并进入您的域名页面
+4. 点击 "更多" 选项
+5. 选择 "管理"
+6. 在下方 "管理员" 部分找到 "Resolver" 选项
+7. 点击 "设置" 按钮
+8. 输入您部署的 OPResolver 合约地址
+9. 确认交易
+
+这种方式更加用户友好，无需直接调用合约函数，建议用于一次性配置操作。
+
+如果希望通过脚本自动化此操作，则可以使用我们提供的 `SetupResolver.s.sol` 脚本。
 
 ## 注意事项与潜在问题
 
