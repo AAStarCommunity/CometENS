@@ -7,28 +7,28 @@ import "./StorageContract.sol";
 
 /**
  * @title ENSManager
- * @dev 管理ENS域名的注册和解析设置
+ * @dev Manage ENS domain registration and resolution settings
  */
 contract ENSManager is Ownable {
-    // 存储合约
+    // Storage contract
     StorageContract public storageContract;
     
-    // ENS注册表
+    // ENS registry
     ENS public ensRegistry;
     
-    // Gateway验证器接口
+    // Gateway verifier interface
     address public gatewayVerifier;
     
-    // 事件定义
+    // Events
     event StorageContractUpdated(address indexed storageContract);
     event ENSRegistryUpdated(address indexed ensRegistry);
     event GatewayVerifierUpdated(address indexed gatewayVerifier);
     event SubdomainRegistered(bytes32 indexed parentNode, string indexed label, address indexed owner);
     
     /**
-     * @dev 构造函数
-     * @param _ensRegistry ENS注册表地址
-     * @param _storageContract 存储合约地址
+     * @dev Constructor
+     * @param _ensRegistry ENS registry address
+     * @param _storageContract Storage contract address
      */
     constructor(address _ensRegistry, address _storageContract) Ownable(msg.sender) {
         ensRegistry = ENS(_ensRegistry);
@@ -36,8 +36,8 @@ contract ENSManager is Ownable {
     }
     
     /**
-     * @dev 更新存储合约地址
-     * @param _storageContract 新的存储合约地址
+     * @dev Update storage contract address
+     * @param _storageContract New storage contract address
      */
     function setStorageContract(address _storageContract) external onlyOwner {
         require(_storageContract != address(0), "Invalid storage contract address");
@@ -46,8 +46,8 @@ contract ENSManager is Ownable {
     }
     
     /**
-     * @dev 更新ENS注册表地址
-     * @param _ensRegistry 新的ENS注册表地址
+     * @dev Update ENS registry address
+     * @param _ensRegistry New ENS registry address
      */
     function setENSRegistry(address _ensRegistry) external onlyOwner {
         require(_ensRegistry != address(0), "Invalid ENS registry address");
@@ -56,8 +56,8 @@ contract ENSManager is Ownable {
     }
     
     /**
-     * @dev 设置Gateway验证器地址
-     * @param _gatewayVerifier 新的Gateway验证器地址
+     * @dev Set Gateway verifier address
+     * @param _gatewayVerifier New Gateway verifier address
      */
     function setGatewayVerifier(address _gatewayVerifier) external onlyOwner {
         gatewayVerifier = _gatewayVerifier;
@@ -65,133 +65,134 @@ contract ENSManager is Ownable {
     }
     
     /**
-     * @dev 注册子域名
-     * @param parentNode 父域名的namehash
-     * @param label 子域名标签
-     * @param owner 所有者地址
+     * @dev Register a subdomain
+     * @param parentNode Parent domain namehash
+     * @param label Subdomain label
+     * @param owner Owner address
      */
     function registerSubdomain(bytes32 parentNode, string calldata label, address owner) external {
-        // 确保发送者有权限在父域名下设置子域名
-        require(ensRegistry.owner(parentNode) == msg.sender, "Not authorized for parent domain");
+        // Ensure sender has permission to set subdomains under parent domain
+        address parentOwner = ensRegistry.owner(parentNode);
+        require(parentOwner == msg.sender, "Not authorized for parent domain");
         
-        // 计算子域名的namehash
+        // Calculate subdomain namehash
         bytes32 labelHash = keccak256(bytes(label));
         bytes32 subnode = keccak256(abi.encodePacked(parentNode, labelHash));
         
-        // 在ENS注册表中设置子域名所有者
+        // Set subdomain owner in ENS registry
         ensRegistry.setSubnodeOwner(parentNode, labelHash, owner);
         
-        // 在存储合约中注册子域名
+        // Register subdomain in storage contract
         storageContract.registerSubdomain(address(ensRegistry), parentNode, subnode, owner);
         
         emit SubdomainRegistered(parentNode, label, owner);
     }
     
     /**
-     * @dev 设置域名解析地址
-     * @param node 域名的namehash
-     * @param addr 解析地址
+     * @dev Set domain resolved address
+     * @param node Domain namehash
+     * @param addr Resolved address
      */
     function setAddr(bytes32 node, address addr) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中设置解析地址
+        // Set resolved address in storage contract
         storageContract.setResolvedAddress(node, addr);
     }
     
     /**
-     * @dev 设置文本记录
-     * @param node 域名的namehash
-     * @param key 记录键
-     * @param value 记录值
+     * @dev Set text record
+     * @param node Domain namehash
+     * @param key Record key
+     * @param value Record value
      */
     function setText(bytes32 node, string calldata key, string calldata value) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中设置文本记录
+        // Set text record in storage contract
         storageContract.setTextRecord(node, key, value);
     }
     
     /**
-     * @dev 设置内容哈希
-     * @param node 域名的namehash
-     * @param hash 内容哈希
+     * @dev Set content hash
+     * @param node Domain namehash
+     * @param hash Content hash
      */
     function setContentHash(bytes32 node, bytes calldata hash) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中设置内容哈希
+        // Set content hash in storage contract
         storageContract.setContentHash(node, hash);
     }
     
     /**
-     * @dev 设置头像
-     * @param node 域名的namehash
-     * @param avatarUrl 头像URL
+     * @dev Set avatar
+     * @param node Domain namehash
+     * @param avatarUrl Avatar URL
      */
     function setAvatar(bytes32 node, string calldata avatarUrl) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中设置头像
+        // Set avatar in storage contract
         storageContract.setAvatar(node, avatarUrl);
     }
     
     /**
-     * @dev 设置合约名称
-     * @param node 域名的namehash
-     * @param name 合约名称
+     * @dev Set contract name
+     * @param node Domain namehash
+     * @param name Contract name
      */
     function setContractName(bytes32 node, string calldata name) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中设置合约名称
+        // Set contract name in storage contract
         storageContract.setContractName(node, name);
     }
     
     /**
-     * @dev 设置多链地址
-     * @param node 域名的namehash
-     * @param chainId 链ID
-     * @param addr 地址字节
+     * @dev Set multi-chain address
+     * @param node Domain namehash
+     * @param chainId Chain ID
+     * @param addr Address bytes
      */
     function setMultiChainAddress(bytes32 node, uint256 chainId, bytes calldata addr) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中设置多链地址
+        // Set multi-chain address in storage contract
         storageContract.setMultiChainAddress(node, chainId, addr);
     }
     
     /**
-     * @dev 批量设置文本记录
-     * @param node 域名的namehash
-     * @param keys 记录键数组
-     * @param values 记录值数组
+     * @dev Batch set text records
+     * @param node Domain namehash
+     * @param keys Record keys array
+     * @param values Record values array
      */
     function batchSetTextRecords(bytes32 node, string[] calldata keys, string[] calldata values) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中批量设置文本记录
+        // Batch set text records in storage contract
         storageContract.batchSetTextRecords(node, keys, values);
     }
     
     /**
-     * @dev 批量设置多链地址
-     * @param node 域名的namehash
-     * @param chainIds 链ID数组
-     * @param addrs 地址字节数组
+     * @dev Batch set multi-chain addresses
+     * @param node Domain namehash
+     * @param chainIds Chain IDs array
+     * @param addrs Address bytes array
      */
     function batchSetMultiChainAddresses(bytes32 node, uint256[] calldata chainIds, bytes[] calldata addrs) external {
-        // 确保发送者有权限设置域名
+        // Ensure sender has permission to set domain
         require(ensRegistry.owner(node) == msg.sender, "Not authorized");
         
-        // 在存储合约中批量设置多链地址
+        // Batch set multi-chain addresses in storage contract
         storageContract.batchSetMultiChainAddresses(node, chainIds, addrs);
     }
 } 

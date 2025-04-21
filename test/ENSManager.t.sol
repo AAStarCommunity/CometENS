@@ -28,20 +28,18 @@ contract ENSManagerTest is Test {
         storageContract = new StorageContract();
         ensManager = new ENSManager(address(registry), address(storageContract));
         
-        // Set aastar.eth owner to OWNER
+        // Make ENSManager an admin in StorageContract
+        storageContract.addAdmin(address(ensManager));
+        
+        // Set up ENS registry
         vm.startPrank(address(this));
         registry.setSubnodeOwner(ROOT_NODE, keccak256("eth"), address(this));
         registry.setSubnodeOwner(keccak256(abi.encodePacked(ROOT_NODE, keccak256("eth"))), keccak256("aastar"), OWNER);
         vm.stopPrank();
-        
-        // Make ENSManager an admin in StorageContract
-        vm.startPrank(address(this));
-        storageContract.addAdmin(address(ensManager));
-        vm.stopPrank();
     }
     
     // Test namehash calculation
-    function testNamehash() public {
+    function testNamehash() pure public {
         // Use precalculated namehash value instead of calling contract method
         bytes32 result = ETH_NODE;
         assertEq(result, ETH_NODE);
@@ -49,6 +47,11 @@ contract ENSManagerTest is Test {
     
     // Test subdomain registration
     function testRegisterSubdomain() public {
+        // Set OWNER as the owner of the ETH_NODE in the test
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
+        
         // Register subdomain
         vm.startPrank(OWNER);
         
@@ -70,6 +73,11 @@ contract ENSManagerTest is Test {
     
     // Test subdomain registration permission check
     function testRegisterSubdomainUnauthorized() public {
+        // Set OWNER as the owner of the ETH_NODE in the test
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
+        
         vm.startPrank(USER);
         
         // Expected failure: not the parent domain owner
@@ -81,12 +89,16 @@ contract ENSManagerTest is Test {
     
     // Test setting resolved address
     function testSetAddr() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         
         // Set resolved address
         ensManager.setAddr(subnode, USER);
@@ -100,12 +112,16 @@ contract ENSManagerTest is Test {
     
     // Test setting text record
     function testSetText() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         
         string memory key = "email";
         string memory value = "test@example.com";
@@ -122,12 +138,16 @@ contract ENSManagerTest is Test {
     
     // Test setting content hash
     function testSetContentHash() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         
         bytes memory hash = hex"1220c3c4733ec8affd06cf9e9ff50ffc6bcd2ec85a6170004bb709669c31de94391a";
         
@@ -143,12 +163,16 @@ contract ENSManagerTest is Test {
     
     // Test setting avatar
     function testSetAvatar() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         
         string memory avatarUrl = "ipfs://QmUUzaZxNvMJg6UruLo5vVSjcpnT6GfiHNufdpFLfYEWQh";
         
@@ -164,12 +188,16 @@ contract ENSManagerTest is Test {
     
     // Test setting contract name
     function testSetContractName() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         
         string memory name = "TestContract";
         
@@ -185,12 +213,16 @@ contract ENSManagerTest is Test {
     
     // Test setting multi-chain address
     function testSetMultiChainAddress() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         
         uint256 chainId = 137; // Polygon
         bytes memory addr = hex"1234567890123456789012345678901234567890";
@@ -207,12 +239,16 @@ contract ENSManagerTest is Test {
     
     // Test permission check
     function testOnlyOwnerModifier() public {
-        // Calculate subdomain hash
-        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
+        // Set up: Register subdomain owned by OWNER
+        vm.startPrank(address(this));
+        registry.setOwner(ETH_NODE, OWNER);
+        vm.stopPrank();
         
-        // Register subdomain
         vm.startPrank(OWNER);
         ensManager.registerSubdomain(ETH_NODE, SUB_LABEL, OWNER);
+        
+        // Calculate subdomain hash
+        bytes32 subnode = keccak256(abi.encodePacked(ETH_NODE, SUB_LABEL_HASH));
         vm.stopPrank();
         
         // Non-owner trying to set address

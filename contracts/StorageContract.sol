@@ -84,8 +84,7 @@ contract StorageContract {
      * @param subNode 子域名的 namehash
      * @param owner 所有者地址
      */
-    function registerSubdomain(address registry, bytes32 parentNode, bytes32 subNode, address owner) external {
-        // 目前不做权限验证，在 ENSManager 中已有验证
+    function registerSubdomain(address registry, bytes32 parentNode, bytes32 subNode, address owner) external onlyAdmin {
         registries[registry][subNode] = owner;
         emit SubdomainRegistered(registry, parentNode, subNode, owner);
     }
