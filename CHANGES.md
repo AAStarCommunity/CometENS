@@ -128,3 +128,46 @@
   - 新增文件: contracts/ENSResolverFactory.sol
   - 新增文件: script/DeployENSResolverFactory.s.sol
   - 新增文件: test/ENSResolverFactory.t.sol 
+
+## 版本 0.11.0 (测试修复)
+
+### 2024-07-20
+
+- 修复测试用例中的权限问题
+  - 更新ENSManager.t.sol以正确设置域名所有权
+  - 更新StorageContract.t.sol中的注册子域名权限检查
+  - 添加管理员权限检查到registerSubdomain函数
+
+- 优化合约注释
+  - 将ENSManager合约中的中文注释改为英文
+  - 规范化注释格式，提高代码可读性
+
+- 修改内容总结:
+  - 更新文件: test/ENSManager.t.sol
+  - 更新文件: test/StorageContract.t.sol
+  - 更新文件: contracts/StorageContract.sol
+  - 更新文件: contracts/ENSManager.sol
+  - 更新文件: PLAN.md 
+
+## 0.11.0 (2024-07-20)
+
+### 测试修复和权限检查优化
+
+#### 修复内容
+- 修复测试用例关于权限问题的处理：
+  - 更新 `test/ENSManager.t.sol` 确保正确的域名所有权设置
+  - 更新 `test/StorageContract.t.sol` 添加子域名注册的权限检查
+  - 完善管理员权限检查的测试用例，提高测试覆盖率
+
+#### 变更的文件
+- test/ENSManager.t.sol: 修改测试域名哈希和权限检查方式
+- test/StorageContract.t.sol: 添加权限检查测试，优化测试结构
+
+### 技术细节
+- 解决了测试中 "Not authorized for parent domain" 的错误，通过确保在测试环境中正确设置域名所有权和管理员权限
+- 更新了测试断言，使用vm.expectRevert来验证权限检查功能
+- 移除了 ENSRegistry.sol 的依赖引用问题，避免编译错误
+
+### 注意事项
+- 所有测试文件中的注释已从中文转为英文，提高代码可读性
+- 测试前确保已安装必要的依赖 

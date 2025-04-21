@@ -9,126 +9,197 @@ contract StorageContractTest is Test {
     
     // Test addresses
     address public constant OWNER = address(0x1);
-    address public constant REGISTRY = address(0x2);
-    address public constant ACCOUNT = address(0x3);
+    address public constant ADMIN = address(0x2);
+    address public constant USER = address(0x3);
     
-    // Test domain hashes
-    bytes32 public constant PARENT_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae; // aastar.eth
-    bytes32 public constant SUB_NODE = 0x3c2e632b9818fb2809a494170e5eb02960f9ef5ef40ac0d1d31359c57bd8323e; // sub.aastar.eth
+    // Test domains
+    bytes32 public constant DOMAIN_NODE = 0xaf44fcef9d64d9c7abe55a98111b80a2aa017cee3bacf637c12bb20374657eb4;
     
     // Set up the test environment
     function setUp() public {
+        vm.startPrank(OWNER);
         storageContract = new StorageContract();
-        vm.startPrank(OWNER);
+        storageContract.addAdmin(ADMIN);
+        vm.stopPrank();
     }
     
-    // Test subdomain registration
+    // Test adding an admin
+    function testAddAdmin() public {
+        vm.startPrank(OWNER);
+        
+        address newAdmin = address(0x4);
+        
+        vm.expectEmit(true, true, false, false);
+        emit StorageContract.AdminAdded(newAdmin);
+        
+        storageContract.addAdmin(newAdmin);
+        
+        assertTrue(storageContract.admins(newAdmin));
+        
+        vm.stopPrank();
+    }
+    
+    // Test removing an admin
+    function testRemoveAdmin() public {
+        vm.startPrank(OWNER);
+        
+        vm.expectEmit(true, true, false, false);
+        emit StorageContract.AdminRemoved(ADMIN);
+        
+        storageContract.removeAdmin(ADMIN);
+        
+        assertFalse(storageContract.admins(ADMIN));
+        
+        vm.stopPrank();
+    }
+    
+    // Test that non-owner cannot add an admin
+    function testAddAdminNotOwner() public {
+        vm.startPrank(USER);
+        
+        address newAdmin = address(0x4);
+        
+        vm.expectRevert();
+        storageContract.addAdmin(newAdmin);
+        
+        vm.stopPrank();
+    }
+    
+    // Test that non-owner cannot remove an admin
+    function testRemoveAdminNotOwner() public {
+        vm.startPrank(USER);
+        
+        vm.expectRevert();
+        storageContract.removeAdmin(ADMIN);
+        
+        vm.stopPrank();
+    }
+    
+    // Test registering a subdomain
     function testRegisterSubdomain() public {
+        vm.startPrank(ADMIN);
+        
+        address registry = address(0x5);
+        address owner = address(0x6);
+        
         vm.expectEmit(true, true, true, true);
-        emit StorageContract.SubdomainRegistered(REGISTRY, PARENT_NODE, SUB_NODE, OWNER);
+        emit StorageContract.SubdomainRegistered(registry, DOMAIN_NODE, owner);
         
-        storageContract.registerSubdomain(REGISTRY, PARENT_NODE, SUB_NODE, OWNER);
+        storageContract.registerSubdomain(registry, DOMAIN_NODE, owner);
         
-        address owner = storageContract.registries(REGISTRY, SUB_NODE);
-        assertEq(owner, OWNER);
-    }
-    
-    // Test authorization check
-    function testRegisterSubdomainUnauthorized() public {
-        // Ensure ACCOUNT is not an admin
-        vm.stopPrank();
-
-        // Modify StorageContract to add admin check for registerSubdomain
-        // First, make the original contract admin check for registerSubdomain
-        vm.startPrank(OWNER);
-        storageContract.removeAdmin(OWNER); // To ensure we reset state between tests
-        storageContract.addAdmin(OWNER);
-        vm.stopPrank();
-        
-        // Try with non-admin account
-        vm.startPrank(ACCOUNT);
-        
-        vm.expectRevert("Not an admin");
-        storageContract.registerSubdomain(REGISTRY, PARENT_NODE, SUB_NODE, OWNER);
+        assertEq(storageContract.registries(registry, DOMAIN_NODE), owner);
         
         vm.stopPrank();
     }
     
-    // Test setting resolved address
+    // Test that non-admin cannot register a subdomain
+    function testRegisterSubdomainNotAdmin() public {
+        vm.startPrank(USER);
+        
+        address registry = address(0x5);
+        address owner = address(0x6);
+        
+        vm.expectRevert("Not authorized");
+        storageContract.registerSubdomain(registry, DOMAIN_NODE, owner);
+        
+        vm.stopPrank();
+    }
+    
+    // Test setting a resolved address
     function testSetResolvedAddress() public {
-        vm.expectEmit(true, false, false, true);
-        emit StorageContract.AddressSet(SUB_NODE, ACCOUNT);
+        vm.startPrank(ADMIN);
         
-        storageContract.setResolvedAddress(SUB_NODE, ACCOUNT);
+        address resolvedAddress = address(0x7);
         
-        address resolvedAddress = storageContract.resolvedAddresses(SUB_NODE);
-        assertEq(resolvedAddress, ACCOUNT);
+        vm.expectEmit(true, true, true, false);
+        emit StorageContract.ResolvedAddressSet(DOMAIN_NODE, resolvedAddress);
+        
+        storageContract.setResolvedAddress(DOMAIN_NODE, resolvedAddress);
+        
+        assertEq(storageContract.resolvedAddresses(DOMAIN_NODE), resolvedAddress);
+        
+        vm.stopPrank();
     }
     
-    // Test setting text record
+    // Test setting a text record
     function testSetTextRecord() public {
+        vm.startPrank(ADMIN);
+        
         string memory key = "email";
         string memory value = "test@example.com";
         
-        vm.expectEmit(true, false, false, true);
-        emit StorageContract.TextRecordSet(SUB_NODE, key, value);
+        vm.expectEmit(true, true, true, true);
+        emit StorageContract.TextRecordSet(DOMAIN_NODE, key, value);
         
-        storageContract.setTextRecord(SUB_NODE, key, value);
+        storageContract.setTextRecord(DOMAIN_NODE, key, value);
         
-        string memory storedValue = storageContract.textRecords(SUB_NODE, key);
-        assertEq(storedValue, value);
+        assertEq(storageContract.textRecords(DOMAIN_NODE, key), value);
+        
+        vm.stopPrank();
     }
     
-    // Test setting content hash
+    // Test setting a content hash
     function testSetContentHash() public {
+        vm.startPrank(ADMIN);
+        
         bytes memory hash = hex"1220c3c4733ec8affd06cf9e9ff50ffc6bcd2ec85a6170004bb709669c31de94391a";
         
-        vm.expectEmit(true, false, false, true);
-        emit StorageContract.ContentHashSet(SUB_NODE, hash);
+        vm.expectEmit(true, true, true, false);
+        emit StorageContract.ContentHashSet(DOMAIN_NODE, hash);
         
-        storageContract.setContentHash(SUB_NODE, hash);
+        storageContract.setContentHash(DOMAIN_NODE, hash);
         
-        bytes memory storedHash = storageContract.contentHashes(SUB_NODE);
-        assertEq(storedHash, hash);
+        assertEq(storageContract.contentHashes(DOMAIN_NODE), hash);
+        
+        vm.stopPrank();
     }
     
-    // Test setting avatar
+    // Test setting an avatar
     function testSetAvatar() public {
+        vm.startPrank(ADMIN);
+        
         string memory avatarUrl = "ipfs://QmUUzaZxNvMJg6UruLo5vVSjcpnT6GfiHNufdpFLfYEWQh";
         
-        vm.expectEmit(true, false, false, true);
-        emit StorageContract.AvatarSet(SUB_NODE, avatarUrl);
+        vm.expectEmit(true, true, true, false);
+        emit StorageContract.AvatarSet(DOMAIN_NODE, avatarUrl);
         
-        storageContract.setAvatar(SUB_NODE, avatarUrl);
+        storageContract.setAvatar(DOMAIN_NODE, avatarUrl);
         
-        string memory storedUrl = storageContract.avatars(SUB_NODE);
-        assertEq(storedUrl, avatarUrl);
+        assertEq(storageContract.avatars(DOMAIN_NODE), avatarUrl);
+        
+        vm.stopPrank();
     }
     
-    // Test setting contract name
+    // Test setting a contract name
     function testSetContractName() public {
+        vm.startPrank(ADMIN);
+        
         string memory name = "TestContract";
         
-        vm.expectEmit(true, false, false, true);
-        emit StorageContract.ContractNameSet(SUB_NODE, name);
+        vm.expectEmit(true, true, true, false);
+        emit StorageContract.ContractNameSet(DOMAIN_NODE, name);
         
-        storageContract.setContractName(SUB_NODE, name);
+        storageContract.setContractName(DOMAIN_NODE, name);
         
-        string memory storedName = storageContract.contractNames(SUB_NODE);
-        assertEq(storedName, name);
+        assertEq(storageContract.contractNames(DOMAIN_NODE), name);
+        
+        vm.stopPrank();
     }
     
-    // Test setting multi-chain address
+    // Test setting a multi-chain address
     function testSetMultiChainAddress() public {
+        vm.startPrank(ADMIN);
+        
         uint256 chainId = 137; // Polygon
         bytes memory addr = hex"1234567890123456789012345678901234567890";
         
-        vm.expectEmit(true, false, false, true);
-        emit StorageContract.MultiChainAddressSet(SUB_NODE, chainId, addr);
+        vm.expectEmit(true, true, true, true);
+        emit StorageContract.MultiChainAddressSet(DOMAIN_NODE, chainId, addr);
         
-        storageContract.setMultiChainAddress(SUB_NODE, chainId, addr);
+        storageContract.setMultiChainAddress(DOMAIN_NODE, chainId, addr);
         
-        bytes memory storedAddr = storageContract.multiChainAddresses(SUB_NODE, chainId);
-        assertEq(storedAddr, addr);
+        assertEq(storageContract.multiChainAddresses(DOMAIN_NODE, chainId), addr);
+        
+        vm.stopPrank();
     }
 } 
