@@ -103,7 +103,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param node 节点namehash
      * @param a 要设置的地址
      */
-    function setAddr(bytes32 node, address a) external override {
+    function setAddr(bytes32 node, address a) external {
         require(authorizeNode(node), "Not authorized");
         _addresses[node][60] = abi.encodePacked(a);
         emit AddrChanged(node, a);
@@ -115,7 +115,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param node 节点namehash
      * @return 关联的地址
      */
-    function addr(bytes32 node) external view override returns (address payable) {
+    function addr(bytes32 node) external view returns (address payable) {
         bytes memory addrBytes = _addresses[node][60];
         if (addrBytes.length == 0) {
             return payable(address(0));
@@ -151,7 +151,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param key 文本记录的键
      * @param value 文本记录的值
      */
-    function setText(bytes32 node, string calldata key, string calldata value) external override {
+    function setText(bytes32 node, string calldata key, string calldata value) external {
         require(authorizeNode(node), "Not authorized");
         _texts[node][key] = value;
         emit TextChanged(node, key, key);
@@ -163,7 +163,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param key 文本记录的键
      * @return 文本记录的值
      */
-    function text(bytes32 node, string calldata key) external view override returns (string memory) {
+    function text(bytes32 node, string calldata key) external view returns (string memory) {
         return _texts[node][key];
     }
     
@@ -172,7 +172,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param node 节点namehash
      * @param hash 内容哈希
      */
-    function setContenthash(bytes32 node, bytes calldata hash) external override {
+    function setContenthash(bytes32 node, bytes calldata hash) external {
         require(authorizeNode(node), "Not authorized");
         _contentHashes[node] = hash;
         emit ContenthashChanged(node, hash);
@@ -183,7 +183,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param node 节点namehash
      * @return 内容哈希
      */
-    function contenthash(bytes32 node) external view override returns (bytes memory) {
+    function contenthash(bytes32 node) external view returns (bytes memory) {
         return _contentHashes[node];
     }
     
@@ -223,7 +223,9 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
             if (coinTypes[i] == 60 && addresses[i].length == 20) {
                 address ethAddr;
                 assembly {
-                    ethAddr := mload(add(mload(add(addresses, 32)), 20))
+                    let addrPos := add(add(addresses, 32), mul(i, 32))
+                    let addrVal := mload(addrPos)
+                    ethAddr := addrVal
                 }
                 emit AddrChanged(node, ethAddr);
             }
@@ -258,7 +260,7 @@ contract ENSResolver is Ownable, IAddrResolver, ITextResolver, IContentHashResol
      * @param interfaceID 接口ID
      * @return 是否支持该接口
      */
-    function supportsInterface(bytes4 interfaceID) external pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
         return
             interfaceID == 0x01ffc9a7 || // ERC165
             interfaceID == 0x3b3b57de || // IAddrResolver
