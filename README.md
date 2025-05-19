@@ -1,5 +1,7 @@
-# ENS Offchain Resolver Gateway(deprecated)
+# ENS Offchain Resolver Gateway(deprecated🚷)
 This package implements a simple CCIP-read gateway server for ENS offchain resolution.
+
+We move to https://github.com/AAStarCommunity/CometENS-frontend and https://github.com/AAStarCommunity/CometENS-Core
 
 ## Usage:
 You can run the gateway as a command line tool; in its default configuration it reads the data to serve from a JSON file specified on the command line:
