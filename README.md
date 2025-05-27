@@ -1,7 +1,8 @@
 # CometENS
-We forked from unruggable repo and extend it to CometENS core service.
+We forked from [unruggable](https://github.com/unruggable-labs/unruggable-gateways-ens-resolution-demos) repo and extend it to CometENS core service.
 <p align="center">
     <img src="https://raw.githubusercontent.com/unruggable-labs/unruggable-gateways-ens-resolution-demos/main/unruggable-logo-black.png" style = "width:300px;" alt = "Unruggable Gateways" />
+
 <img src="https://raw.githubusercontent.com/jhfnetboy/MarkDownImg/main/img/202505271655901.png" width="35%" alt = "CometENS from   AAStar"/>    
 </p>
 
