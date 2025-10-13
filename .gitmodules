@@ -7,3 +7,12 @@
 [submodule "lib/ens-contracts"]
 	path = lib/ens-contracts
 	url = https://github.com/ensdomains/ens-contracts
+[submodule "vendor/comet-ens-contracts"]
+	path = vendor/comet-ens-contracts
+	url = git@github.com:AAStarCommunity/comet-ens-contracts.git
+[submodule "vendor/CometENS-frontend"]
+	path = vendor/CometENS-frontend
+	url = git@github.com:AAStarCommunity/CometENS-frontend.git
+[submodule "vendor/CometENS-old"]
+	path = vendor/CometENS-old
+	url = git@github.com:AAStarCommunity/CometENS-old.git
