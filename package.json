@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@adraffy/blocksmith": "^0.0.40",
-    "@unruggable/gateways": "^1.2.5"
+    "@ensdomains/ens-contracts": "^1.6.0",
+    "@ensdomains/ensjs": "^4.0.2",
+    "@unruggable/gateways": "^1.2.5",
+    "ethers": "^6.15.0",
+    "viem": "^2.38.1"
   }
 }

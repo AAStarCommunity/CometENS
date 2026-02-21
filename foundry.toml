@@ -5,6 +5,6 @@ solc = "0.8.25"
 
 
 remappings = [
-    "@ensdomains=lib/ens-contracts/",
-    "@unruggable=lib/unruggable-gateways/"
+    "@ensdomains/ens-contracts/=lib/ens-contracts/contracts/",
+    "comet-ens-contracts/=/Users/jason/Dev/aastar/CometENS/vendor/comet-ens-contracts/contracts/"
 ]

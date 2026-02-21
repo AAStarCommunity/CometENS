@@ -4,9 +4,6 @@
 [submodule "lib/unruggable-gateways"]
 	path = lib/unruggable-gateways
 	url = https://github.com/unruggable-labs/unruggable-gateways
-[submodule "lib/ens-contracts"]
-	path = lib/ens-contracts
-	url = https://github.com/ensdomains/ens-contracts
 [submodule "vendor/comet-ens-contracts"]
 	path = vendor/comet-ens-contracts
 	url = git@github.com:AAStarCommunity/comet-ens-contracts.git
@@ -22,3 +19,6 @@
 [submodule "vendor/unruggable-gateways-documentation"]
 	path = vendor/unruggable-gateways-documentation
 	url = https://github.com/unruggable-labs/unruggable-gateways-documentation
+[submodule "lib/ens-contracts"]
+	path = lib/ens-contracts
+	url = https://github.com/ensdomains/ens-contracts.git

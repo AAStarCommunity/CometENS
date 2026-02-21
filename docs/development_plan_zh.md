@@ -1,60 +1,47 @@
-# CometENS 开发计划 (V2)
+# CometENS 开发计划 (V3 - 继承改造方案)
 
-本文档基于 V3 版设计文档，将项目开发分解为多个阶段。
+本文档基于 V3 版设计文档，明确了“先继承运行，再改造增强”的核心策略。
 
 ---
 
 ## 核心依赖与来源
 
-在开发前，明确核心智能合约的来源、获取方式和我们的使用策略。
-
 #### 1. `CometENS_L1_Resolver` (我方部署)
-- **策略**: 我们将使用项目自带的官方模板进行编译和部署。
-- **代码来源**: 使用我们项目中已有的 `contracts/OffchainResolver.sol` 文件 (继承自 `unruggable-gateways`)。
-- **ABI 来源**: 使用 `foundry` 编译我们自己的合约代码后，在 `out/` 目录中获得。
-- **地址来源**: 在我们手动将其部署到 L1 测试网/主网后获得。
+- **策略**: 使用 `unruggable-gateways` 项目中自带的 `OffchainResolver.sol` 模板进行编译和部署。
+- **ABI 来源**: 通过 `foundry` 编译后获得。
+- **地址来源**: 部署到 L1 测试网/主网后获得。
 
-#### 2. `ENS Name Wrapper` (官方部署)
-- **策略**: 我们不部署此合约，而是直接与 ENS 团队部署在链上的官方合约进行交互。
-- **代码来源**: 无需关心源码。
-- **ABI 来源**: 通过 `pnpm add @ensdomains/ens-contracts` 命令安装官方包，并从包中导入 ABI。
-- **地址来源**: 从 ENS 官方文档查询并硬编码到我们后端配置中。
-
-#### 3. `Public Resolver` (官方部署)
-- **策略**: 与 Name Wrapper 相同，我们直接与官方部署的合约交互。
-- **ABI 来源**: 同样来自 `@ensdomains/ens-contracts` 包。
+#### 2. `ENS Name Wrapper` & `Public Resolver` (官方部署)
+- **策略**: 直接与 ENS 官方已部署的合约交互。
+- **ABI 来源**: 通过 `pnpm add @ensdomains/ens-contracts` 安装官方包，并从包中导入。
 - **地址来源**: 从 ENS 官方文档查询。
 
----
+#### 3. TypeScript 客户端选型
+- **统一选择**: 使用 `viem` 作为唯一链上读写与 ABI 编解码库（替代 `ethers`）。
+- **网关运行时**: Bun/Node 均可，MVP 以 Bun 运行，未来保留 Node 落地选项。
 
-## Phase 0: 同步与基线运行 (Synchronization & Baseline Run)
+--- 
 
-*   **目标**: 确保代码库最新，并成功在本地跑通原始的 `unruggable-gateways` Demo。
+## Phase 0: 基线运行与分析 (Baseline Run & Analysis)
+
+*   **目标**: 确保环境配置正确，并完整地在本地运行 `unruggable-gateways` 原始 Demo。
 *   **任务**:
-    1.  **同步代码**: 将 `main` 分支的最新代码合并到我们当前的 `aastar-dev` 分支。
-    2.  **安装依赖**: 执行 `pnpm install`，并安装合约依赖 `@ensdomains/ens-contracts`。
-    3.  **深入分析**: 详细阅读 `unruggable-gateways` 的合约、后端 Gateway 服务和前端 Demo 的源码。
-    4.  **运行 Demo**: 在本地测试网（如 Foundry Anvil）上，完整部署并跑通原始 Demo 的全流程。
+    1.  **同步/配置 (已完成)**: 分支已同步，`.env` 文件已配置。
+    2.  **启动本地测试链**: 使用 `anvil` 启动一个本地 Ethereum 节点。
+    3.  **部署 L1 解析器**: 将 `OffchainResolver.sol` 合约部署到本地 `anvil` 网络。
+    4.  **启动 Gateway 服务**: 在 `packages/gateway` 使用 `viem` 启动 CCIP‑Read 网关（`bun run`），指向公共测试网（如 `op-sepolia`）以验证基础功能。
+    5.  **端到端测试**: 编写或使用一个测试脚本，调用部署在 `anvil` 上的 L1 解析器，验证整个 CCIP-Read 流程是否可以成功通过本地 Gateway 从公共测试网获取数据。
 
 ## Phase 1: CometENS 核心改造 (MVP)
 
-*   **目标**: 将原始 Demo 改造为我们的 CometENS 产品 MVP。
+*   **目标**: 将 Gateway 的数据源改造为 L2 Name Wrapper，并完成核心业务逻辑。
 *   **任务**:
-    1.  **后端改造**: 修改 Gateway 服务，将其数据源从 JSON 文件切换为从 L2 的 `ENS Name Wrapper` 合约进行实时读取。
-    2.  **前端改造**: 界面品牌化，并实现用户签名授权 -> 后端代理注册的流程。
-    3.  **后台执行逻辑改造**: 实现 Worker EOA 通过调用 L2 `ENS Name Wrapper` 为用户铸造子域名 NFT 的逻辑。
+    1.  **实现 `NameWrapperRollup`/`L2RecordsReader`**: 在 `packages/gateway/readers` 实现 viem 读取 L2 Name Wrapper 或自有 Records 合约。
+    2.  **CCIP‑Read 入口**: 在 `packages/gateway/ccip` 实现 EIP‑3668 接口，替换 ethers，统一使用 viem ABI 编解码。
+    3.  **实现注册/管理接口**: 在 Gateway 中添加 `/register` 等 API 端点，用于接收前端签名授权，并由 Worker EOA 调用 L2 合约执行写操作。
+    4.  **开发前端**: 独立开发 Vite 前端应用，实现钱包连接、子域名注册（签名授权）、域名管理等界面。
 
-## Phase 2: 功能增强与部署
+## Phase 2 & 3: (与 V2 计划一致)
 
-*   **目标**: 增加域名管理功能，并部署到公共测试网。
-*   **任务**:
-    1.  **域名管理**: 开发前端页面，允许用户管理自己名下的子域名（设置地址、头像等）。
-    2.  **公共测试网部署**: 将所有改造后的组件部署到 Sepolia 和 OP Sepolia，进行公开测试。
-
-## Phase 3: 高级功能与主网
-
-*   **目标**: 支持 AA 账户，上线主网，并完成安全加固。
-*   **任务**:
-    1.  **AA 账户支持**: 集成 ERC-4337 Paymaster，实现对 AA 钱包的 Gasless 支持。
-    2.  **主网部署**: 在以太坊主网和 Optimism 主网进行部署。
-    3.  **(管理操作) 安全加固**: 由 `aastar.eth` 所有者执行 L1 Name Wrapper 的“熔断”操作，永久锁定解析器。
+*   **功能增强**: 支持 ERC-4337 AA 账户。
+*   **部署与安全**: 上线主网并执行 L1 解析器“熔断”操作。

@@ -29,6 +29,35 @@ CometENS 旨在成为一个开源、去中心化的 ENS 子域名分发和管理
 
 最终架构融合了 Name Wrapper 和 CCIP-Read 两个核心方案，实现了“L2 管理所有权与记录，L1 安全低成本解析”的目标。
 
+#### 总览与模块边界
+
+用户/运营入口：
+- Admin Portal（Vite 前端）：统一管理入口；.eth 可写；.box 只读+跳转/工单
+- 钱包/应用：标准 ENS 解析（viem/ethers/钱包）
+
+链上组件：
+- 以太坊主网（L1）
+  - ENS Registry（官方）
+  - L1 Resolver（我们部署）
+    - OffchainResolver：可信签名校验
+    - OPResolver：存储证明校验
+  - L1 Name Wrapper（可选）：包裹根域并烧断 CANNOT_SET_RESOLVER
+- Optimism（L2）
+  - 记录与所有权存储
+    - 选型 A：L2Records 合约（MVP）
+    - 选型 B：ENS Name Wrapper + Public Resolver（官方）
+  - Worker EOA（网关控制），可扩展 Paymaster/AA
+
+中台：
+- CCIP‑Read Gateway（独立部署）
+  - 解析 API：EIP‑3668 标准接口，返回签名或证明
+  - 管理 API：注册子域、设置记录（Worker EOA 在 L2 写入）
+  - Readers：NameWrapper/Records/box 适配
+  - 安全与观测：EIP‑712、RBAC、限流、审计、日志
+
+.box（OP）：
+- 3DNS/my.box 合约状态只读展示；待官方开放写入能力后接入
+
 ```mermaid
 graph TD
     subgraph "用户端"
@@ -104,6 +133,13 @@ graph TD
 
 (与 V2 版本一致)
 
+### 4.1 部署拓扑
+- L1 Resolver：Ethereum Mainnet（主网）
+- Gateway：Cloudflare Workers/Node（HTTPS、可水平扩展）
+- L2 合约：Optimism Mainnet（MVP 可先 OP‑Sepolia）
+- Admin Portal：静态托管（Cloudflare Pages/Vercel）
+- 密钥：Worker EOA/网关签名人独立管理，环境隔离
+
 #### 场景 1: 社区管理员初始化
 
 ```mermaid
@@ -162,3 +198,34 @@ sequenceDiagram
     L1Resolver-->>DApp: 4. Revert OffchainLookup(指向Gateway)
     deactivate L1Resolver
 ```
+
+---
+
+## 5. 里程碑与任务进度
+
+里程碑 A：可信签名版解析 MVP（进行中）
+- A1 网关跑通 CCIP‑Read（解析 API、addr/text/contenthash、签名返回）【计划】
+- A2 部署 L2Records 合约或接 Name Wrapper（只读）【进行中】
+- A3 部署 L1 OffchainResolver 并绑定测试根域【计划】
+- A4 Admin Portal 最小闭环（注册/设置/查询）【计划】
+- A5 .box 仪表盘（只读 + 跳转/工单模板）【计划】
+- A6 安全与运维基础（EIP‑712、nonce/过期、限流、日志）【计划】
+
+里程碑 B：Name Wrapper + NFT 子域（计划）
+- B1 集成官方 Name Wrapper：铸造/转移子域 NFT
+- B2 Portal 批量发放/记录设置、冲突检测与命名规则
+- B3 审计日志与监控看板
+
+里程碑 C：存储证明与信任最小化（计划）
+- C1 证明生成：接入 Bedrock 状态根与证明
+- C2 部署 OPResolver，启用 resolveWithProof
+- C3 切换与回退策略
+
+里程碑 D：生产强化与治理（计划）
+- D1 L1 包裹根域并烧断 CANNOT_SET_RESOLVER（谨慎执行）
+- D2 密钥轮换、RBAC、报警与应急预案
+- D3 运维流程与灾备演练
+
+里程碑 E：.box 写路径（依赖官方，待定）
+- E1 接入 my.box 授权/角色/接口
+- E2 与 .eth 管理闭环对齐
