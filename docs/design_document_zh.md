@@ -104,6 +104,77 @@ graph TD
 
 5.  **Worker EOA**: 由后端服务控制的链上执行账户，负责支付 Gas 并将用户的意图（注册、设置记录）通过调用 L2 的 Name Wrapper 合约来执行。
 
+### 2.x 组件内部结构图
+
+```mermaid
+flowchart LR
+  subgraph AdminPortal["Admin Portal"]
+    UI["UI 层"]
+    API["API Client"]
+    SIG["EIP-712 签名"]
+  end
+  subgraph Gateway["Gateway"]
+    CCIP["CCIP API"]
+    MGMT["管理 API"]
+    READERS["Readers(NameWrapper/L2Records/Box)"]
+    SEC["Security(RBAC/RateLimit/Audit)"]
+  end
+  subgraph L1["L1"]
+    REG["ENS Registry"]
+    RES["L1 Resolver"]
+    WRAP1["L1 Name Wrapper"]
+  end
+  subgraph L2["Optimism"]
+    WRAP2["Name Wrapper"]
+    L2R["L2 Records"]
+    PR["Public Resolver"]
+  end
+  UI --> API --> MGMT
+  CCIP --> READERS --> WRAP2
+  READERS --> L2R
+  READERS --> PR
+  REG --> RES --> CCIP
+  UI --> SIG --> MGMT
+```
+
+### 2.x 数据流与字段关系
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant D as dApp/Wallet
+  participant REG as ENS Registry(L1)
+  participant RES as L1 Resolver
+  participant G as Gateway
+  participant OP as OP Contracts
+  D->>REG: resolve(name)
+  REG-->>D: resolver = RES
+  D->>RES: addr(bytes32 node)
+  RES--x D: OffchainLookup(url, data)
+  D->>G: POST /ccip { sender, data }
+  G->>OP: readContract(node, key)
+  OP-->>G: record
+  G-->>D: { data, sig | proof }
+  D->>RES: resolveWithProof(response, extra)
+  RES-->>D: addr
+```
+
+```
+RegisterTypes:
+  parent: string
+  label: string
+  owner: address
+  nonce: uint256
+  deadline: uint256
+
+SetAddrTypes:
+  node: bytes32
+  coinType: uint256
+  addr: bytes
+  nonce: uint256
+  deadline: uint256
+```
+
 ### 2.3. 账户与交易模型
 
 将分阶段实现：
@@ -199,7 +270,63 @@ sequenceDiagram
     deactivate L1Resolver
 ```
 
+### 2.x 路线对比与决策
+
+- 自有 L2Records 全链路
+  - 优点：实现快速、结构可控、交易成本更低；网关/前端迭代速度快，便于先跑通闭环
+  - 局限：不自带 Name Wrapper 的 NFT 所有权/保险丝语义；少数直接读取 L2 官方 Resolver 的工具看不到自定义存储
+  - 适用：MVP、快速验证与业务早期
+- 官方 Name Wrapper + Public Resolver
+  - 优点：语义完备（ERC‑1155、Fuses）、与 ENS 生态天然兼容；长期维护成本低
+  - 局限：接入复杂度更高，流程更严格
+  - 适用：稳定上线与长期运营
+- 决策：MVP 先使用 L2Records 打通“L2 存储—Gateway 读取—L1 解析”，验证产品闭环；稳定后提供同步迁移至官方 Resolver/Name Wrapper 的工具与灰度切换
+
 ---
+
+### 4.2 管理流程：注册子域名
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Admin as 管理员
+  participant FE as Admin Portal
+  participant GW as Gateway
+  participant W as Worker EOA
+  participant OP as OP 合约(NameWrapper/L2Records)
+  Admin->>FE: 输入 parent/label/owner
+  FE->>Admin: 请求 EIP-712 签名(Register)
+  Admin-->>FE: 提交签名
+  FE->>GW: POST /register {msg,sig}
+  GW->>GW: 校验签名/策略/nonce
+  GW->>W: 指令 注册子域
+  W->>OP: 铸造/设 owner 或写记录
+  OP-->>W: 回执
+  W-->>GW: 结果
+  GW-->>FE: 返回 txHash
+```
+
+### 4.3 管理流程：设置地址记录
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Admin as 管理员
+  participant FE as Admin Portal
+  participant GW as Gateway
+  participant W as Worker EOA
+  participant OP as OP 合约(L2Records/Resolver)
+  Admin->>FE: 输入 node/coinType/addr
+  FE->>Admin: 请求 EIP-712 签名(SetAddr)
+  Admin-->>FE: 提交签名
+  FE->>GW: POST /set-addr {msg,sig}
+  GW->>GW: 校验签名/策略/nonce
+  GW->>W: 指令 setAddr
+  W->>OP: 写入记录
+  OP-->>W: 回执
+  W-->>GW: 结果
+  GW-->>FE: 返回 txHash
+```
 
 ## 5. 里程碑与任务进度
 

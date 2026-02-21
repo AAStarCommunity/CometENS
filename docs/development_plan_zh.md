@@ -31,15 +31,17 @@
     3.  **部署 L1 解析器**: 将 `OffchainResolver.sol` 合约部署到本地 `anvil` 网络。
     4.  **启动 Gateway 服务**: 在 `packages/gateway` 使用 `viem` 启动 CCIP‑Read 网关（`bun run`），指向公共测试网（如 `op-sepolia`）以验证基础功能。
     5.  **端到端测试**: 编写或使用一个测试脚本，调用部署在 `anvil` 上的 L1 解析器，验证整个 CCIP-Read 流程是否可以成功通过本地 Gateway 从公共测试网获取数据。
+    6.  **Vendor 策略**: `vendor/unruggable-gateways` 仅作参考示例，不直接依赖其运行组件；核心代码在 `packages/gateway` 以 `viem` 重写
 
 ## Phase 1: CometENS 核心改造 (MVP)
 
 *   **目标**: 将 Gateway 的数据源改造为 L2 Name Wrapper，并完成核心业务逻辑。
 *   **任务**:
-    1.  **实现 `NameWrapperRollup`/`L2RecordsReader`**: 在 `packages/gateway/readers` 实现 viem 读取 L2 Name Wrapper 或自有 Records 合约。
+    1.  **实现 `L2RecordsReader` 优先**: 在 `packages/gateway/readers` 实现 viem 读取自有 L2Records 合约（MVP 路线），并预留 Name Wrapper Reader。
     2.  **CCIP‑Read 入口**: 在 `packages/gateway/ccip` 实现 EIP‑3668 接口，替换 ethers，统一使用 viem ABI 编解码。
     3.  **实现注册/管理接口**: 在 Gateway 中添加 `/register` 等 API 端点，用于接收前端签名授权，并由 Worker EOA 调用 L2 合约执行写操作。
     4.  **开发前端**: 独立开发 Vite 前端应用，实现钱包连接、子域名注册（签名授权）、域名管理等界面。
+    5.  **迁移预案**: 提供自定义存储 → 官方 Resolver 的同步脚本与灰度切换策略
 
 ## Phase 2 & 3: (与 V2 计划一致)
 
